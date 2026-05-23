@@ -775,14 +775,27 @@
     );
   pointer-events: none;
 }
-  </style>
+.nav-logo-img {
+  width: clamp(80px, 15vw, 150px);
+  height: auto;
+}
+</style>
 </head>
 
 <body>
 
   <!-- NAV -->
   <nav>
-    <a class="nav-logo" href="#">Alumni <em>1976</em></a>
+    <img src="https://drive.google.com/thumbnail?id=1_fP9DxqJCAR2alZBsccNE2t6_3BhF_Ic&sz=w150"alt="Alumni 1976" class="nav-logo-img">
+    <!--
+    <a class="nav-logo" href="#">
+      <img src="https://drive.google.com/thumbnail?id=1_fP9DxqJCAR2alZBsccNE2t6_3BhF_Ic&sz=w200"alt="Alumni 1976" class="nav-logo-img">
+    </a>
+ 
+    <a class="nav-logo" href="#">" <img src="https://drive.google.com/thumbnail?id=1_fP9DxqJCAR2alZBsccNE2t6_3BhF_Ic&sz=w2000" alt="Image"></a>
+   
+    <img src="https://drive.google.com/uc?export=view&id=1_fP9DxqJCAR2alZBsccNE2t6_3BhF_Ic" alt="Google Drive Image">
+  -->
     <ul class="nav-links">
       <li><a href="#">Αρχική</a></li>
       <li><a href="#">Κοινότητα</a></li>
@@ -858,40 +871,57 @@
       </div>
       <div class="heritage-image">
         <div class="img-frame">
-          <div class="img-placeholder">
-            Φωτογραφία Ορκωμοσίας<br>1976<br>
-            <span style="font-size:0.75rem; opacity:0.5;">
-<!--             
-			 <img src="https://drive.google.com/thumbnail?id=1Kskj_9y0lNF94FT3XZgS-D9RyQk81XjN&sz=w2000" alt="Alumni Reunion Group Photo 1976" style=" width:100%; height:100%; object-fit:contain; object-position:center; display:block; background:#111; " />
-
-<img src="https://drive.google.com/thumbnail?id=1Kskj_9y0lNF94FT3XZgS-D9RyQk81XjN&sz=w2000" alt="Alumni Reunion Group Photo 1976" style=" width:100%; height:100%; object-fit:contain; object-position:center; display:block; background:#111; " />
--->
-<div class="img-frame">
-
-  <img
-    src="https://drive.google.com/thumbnail?id=1Kskj_9y0lNF94FT3XZgS-D9RyQk81XjN&sz=w2000"
-    alt="Alumni Reunion Group Photo 1976"
-    class="heritage-photo"
-  />
-
-  <div class="img-overlay"></div>
-
-  <div class="img-badge">
-    <span class="badge-year">50</span>
-    <span class="badge-sub">χρόνια</span>
-  </div>
-
-</div>
-            </span>
-          </div>
+          <img
+            src="https://drive.google.com/thumbnail?id=1Kskj_9y0lNF94FT3XZgS-D9RyQk81XjN&sz=w2000"
+            alt="Alumni Reunion Group Photo 1976"
+            class="heritage-photo"
+          />
+          <div class="img-overlay"></div>
           <div class="img-badge">
             <span class="badge-year">50</span>
             <span class="badge-sub">χρόνια</span>
           </div>
         </div>
+        <div class="heritage-copy" style="margin-top: 28px;">
+          <div class="collapsible-text collapsed">
+            <p class="collapse-content" style="margin: 0; font-size: 1rem; line-height: 1.9; color: var(--muted); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; text-overflow: ellipsis;">
+              Αγαπητοί συνάδελφοι, φίλοι και συνοδοιπόροι, Εφέτος δεν γιορτάζουμε απλώς μια χρονιά/ημερομηνία στο ημερολόγιο. Γιορτάζουμε μισό αιώνα από τότε που αφήσαμε πίσω μας τα αμφιθέατρα της Πάτρας, κρατώντας ένα πτυχίο που τότε έμοιαζε με εισιτήριο για το άγνωστο.
+              <br><br>
+              Πριν από 50 χρόνια, ήμασταν οι νέοι Ηλεκτρολόγοι Μηχανικοί μιας Ελλάδας που άλλαζε. Με τους λογαριθμικούς μας κανόνες στην αρχή, τα πρώτα μας επιστημονικά κομπιουτεράκια μετά, και με το μυαλό γεμάτο εξισώσεις του Maxwell, θεωρία κυκλωμάτων και όνειρα. Θυμηθείτε την Πάτρα της δεκαετίας του '70. Το Ρίο, τις ατελείωτες ώρες στα εργαστήρια, την αγωνία των εξεταστικών, αλλά και τις συζητήσεις στα καφενεία, τις πολιτικές ανησυχίες, τις φιλίες που σφυρηλατήθηκαν μέσα στη δυσκολία της επιστήμης μας. Από τότε, ο καθένας μας χάραξε τη δική του διαδρομή. Άλλοι χτίσαμε δίκτυα, άλλοι δώσαμε φως και ενέργεια, άλλοι βρεθήκαμε στην αιχμή της πληροφορικής και των τηλεπικοινωνιών. Γίναμε γονείς, παππούδες, επαγγελματίες, αλλά στην καρδιά μείναμε πάντα εκείνοι οι φοιτητές της Πάτρας που πίστευαν ότι μπορούν να εξηγήσουν –και να αλλάξουν– τον κόσμο. Σήμερα, κοιτάζοντας ο ένας τον άλλον, βλέπουμε βέβαια τα σημάδια του χρόνου, αλλά κυρίως βλέπουμε την κοινή μας ρίζα. Πετύχαμε το πιο δύσκολο project της ζωής μας: να παραμείνουμε άνθρωποι και να ξαναβρεθούμε εδώ, 50 χρόνια μετά, για να μοιραστούμε μια αγκαλιά και μια ανάμνηση. Σηκώνουμε το ποτήρι μας σε όσα ζήσαμε, σε όσα καταφέραμε και σε εκείνους τους συναδέλφους που δεν είναι πια μαζί μας, αλλά ταξιδεύουν πάντα στις σκέψεις μας. Στην υγειά μας, στην τάξη μας, στο Πανεπιστήμιο Πατρών!
+            </p>
+            <button class="collapse-toggle" type="button" style="margin-top: 18px; padding: 10px 18px; border: 1px solid var(--gold); border-radius: 999px; background: transparent; color: var(--gold); font-size: 0.9rem; cursor: pointer;">more</button>
+          </div>
+        </div>
       </div>
     </div>
   </section>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var container = document.querySelector('.collapsible-text');
+      if (!container) return;
+      var content = container.querySelector('.collapse-content');
+      var toggle = container.querySelector('.collapse-toggle');
+      if (!content || !toggle) return;
+      toggle.addEventListener('click', function () {
+        var collapsed = container.classList.contains('collapsed');
+        if (collapsed) {
+          container.classList.remove('collapsed');
+          content.style.display = 'block';
+          content.style.webkitLineClamp = '';
+          content.style.overflow = 'visible';
+          toggle.textContent = 'less';
+        } else {
+          container.classList.add('collapsed');
+          content.style.display = '-webkit-box';
+          content.style.webkitBoxOrient = 'vertical';
+          content.style.webkitLineClamp = '3';
+          content.style.overflow = 'hidden';
+          toggle.textContent = 'more';
+        }
+      });
+    });
+  </script>
 
   <!-- MEMORIAL -->
   <section class="memorial">

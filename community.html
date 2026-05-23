@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Κοινότητα · Alumni 1976 · Πανεπιστήμιο Πατρών</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold: #B8944A;
+      --gold-light: #D4B06A;
+      --gold-pale: #F0E4C8;
+      --navy: #1A2035;
+      --navy-mid: #253050;
+      --cream: #FAF7F2;
+      --text: #2C2C2C;
+      --muted: #7A7060;
+      --rule: rgba(184, 148, 74, 0.25);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Jost', sans-serif;
+      font-weight: 300;
+      background: var(--cream);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 60px;
+      background: rgba(26, 32, 53, 0.97);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(184, 148, 74, 0.3);
+    }
+
+    .nav-logo-img {
+      width: clamp(80px, 15vw, 150px);
+      height: auto;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 36px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      transition: color 0.25s;
+    }
+
+    .nav-links a:hover { color: var(--gold-light); }
+    .nav-links a.active { color: var(--gold-light); border-bottom: 1px solid var(--gold); padding-bottom: 2px; }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      padding-top: 120px; /* offset for fixed nav */
+      background: linear-gradient(160deg, #0f1625 0%, #1e2d50 50%, #0c1420 100%);
+      padding-bottom: 80px;
+      padding-left: 60px;
+      padding-right: 60px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .page-header-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      pointer-events: none;
+      width: 500px; height: 500px;
+      top: -100px; right: -80px;
+      background: radial-gradient(circle, rgba(184,148,74,0.12) 0%, transparent 70%);
+    }
+
+    .page-eyebrow {
+      font-size: 0.68rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .page-eyebrow::before {
+      content: '';
+      display: block;
+      width: 48px; height: 1px;
+      background: var(--gold);
+    }
+
+    .page-header h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      font-weight: 300;
+      color: #fff;
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+
+    .page-header h1 em {
+      font-style: italic;
+      color: var(--gold-light);
+    }
+
+    .page-header p {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 0.06em;
+      margin-top: 8px;
+    }
+
+    /* ── MAIN ── */
+    main {
+      padding: 80px 60px 100px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 0 0 36px;
+      height: 1px;
+      background: var(--gold);
+    }
+
+    .section-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.8rem, 3vw, 2.8rem);
+      font-weight: 300;
+      color: var(--navy);
+      margin-bottom: 48px;
+    }
+
+    /* ── GRID ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 24px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: #fff;
+      border: 1px solid var(--rule);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 18px 24px;
+      gap: 14px;
+      position: relative;
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 36px rgba(26,32,53,0.1);
+    }
+
+    .card-number {
+      position: absolute;
+      top: 10px; left: 13px;
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      opacity: 0.5;
+    }
+
+    .photo-wrap {
+      width: 96px; height: 96px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 2px solid var(--rule);
+      background: var(--cream);
+      flex-shrink: 0;
+    }
+
+    .photo-wrap img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .photo-wrap .initials {
+      width: 100%; height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 26px;
+      color: var(--muted);
+      background: var(--cream);
+    }
+
+    .name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.05rem;
+      font-weight: 400;
+      text-align: center;
+      color: var(--navy);
+      line-height: 1.3;
+    }
+
+    .cv-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.62rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      text-decoration: none;
+      border: 1px solid var(--gold);
+      padding: 6px 14px;
+      transition: background 0.22s, color 0.22s;
+      margin-top: 4px;
+    }
+
+    .cv-link:hover {
+      background: var(--gold);
+      color: #fff;
+    }
+
+    .cv-link svg { flex-shrink: 0; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #0f1625;
+      padding: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(184, 148, 74, 0.15);
+    }
+
+    .footer-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.2rem;
+      color: var(--gold-light);
+      letter-spacing: 0.08em;
+    }
+
+    .footer-copy {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.25);
+      letter-spacing: 0.08em;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 28px;
+    }
+
+    .footer-links a {
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--gold); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      nav { padding: 16px 24px; }
+      .nav-links { display: none; }
+      .page-header { padding: 100px 24px 60px; }
+      main { padding: 60px 24px 80px; }
+      footer { flex-direction: column; gap: 20px; text-align: center; padding: 40px 24px; }
+      .footer-links { flex-wrap: wrap; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <img src="https://drive.google.com/thumbnail?id=1_fP9DxqJCAR2alZBsccNE2t6_3BhF_Ic&sz=w150" alt="Alumni 1976" class="nav-logo-img">
+    <ul class="nav-links">
+      <li><a href="https://alumni1976.github.io/alumni1976/">Αρχική</a></li>
+	  
+      <li><a href="#" class="active">Κοινότητα</a></li>
+      <li><a href="alumniphotos">Φωτογραφίες</a></li>
+      <li><a href="alumniprofs">Καθηγητές</a></li>
+      <li><a href="alumnievents">Εκδηλώσεις</a></li>
+      <li><a href="#">Blog</a></li>
+      <li><a href="alumnievents">Επικοινωνία</a></li>
+    </ul>
+ 
+  </nav>
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="page-header-orb"></div>
+    <div class="page-eyebrow">Σχολή Ηλεκτρολόγων Μηχανικών · Πανεπιστήμιο Πατρών</div>
+    <h1>Τα μέλη της<br><em>τάξης του 1976</em></h1>
+    <p>Απόφοιτοι με κοινή ιστορία, κοινές αξίες και αδιάπτωτη φλόγα για τη γνώση.</p>
+  </div>
+
+  <!-- MEMBERS GRID -->
+   <main class="grid">
+
+    <!-- 01 -->
+    <div class="card">
+      <span class="card-number">01</span>
+      <div class="photo-wrap">
+	  <img src="https://lh3.googleusercontent.com/d/1ft9Sanms_Wi0E5FGrMXCVJRc71SCLKDh" alt="" onerror="this.parentElement.innerHTML='<div class=initials>ΓΜ</div>'" />
+	  <!--
+        <img src="https://static.wixstatic.com/media/a807b3_2d01dd43de6e4686b924d8e13694a009~mv2.jpg/v1/fill/w_200,h_200,al_c,q_80,enc_avif,quality_auto/img.jpg" alt="Ροσσέτος Λούζης" onerror="this.parentElement.innerHTML='<div class=initials>ΡΛ</div>'" />
+-->     
+	 </div>
+      <div class="name">Ροσσέτος Λούζης</div>
+      <a class="cv-link" href="https://docs.google.com/document/d/10YWrkIpYHDp3vAG0kMUPcppn3AShRM-f/edit?usp=sharing&ouid=108725897099552772347&rtpof=true&sd=true" target="_blank" rel="noopener">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        CV
+      </a>
+    </div>
+
+    <!-- 02 -->
+    <div class="card">
+      <span class="card-number">02</span>
+      <div class="photo-wrap">
+	  <img src="https://lh3.googleusercontent.com/d/1--wVK03KibBUPGpTcb0owBujTznbYGyd" alt="" onerror="this.parentElement.innerHTML='<div class=initials>ΓΜ</div>'" />
+	  <!--
+        <img src="https://static.wixstatic.com/media/a807b3_251f9717d5184e38be420db7d5592eea~mv2.png/v1/fill/w_200,h_200,al_c,q_80,enc_avif,quality_auto/img.png" alt="Γιώργος Μεταξάς" onerror="this.parentElement.innerHTML='<div class=initials>ΓΜ</div>'" />
+      -->
+	  </div>
+      <div class="name">Γιώργος Μεταξάς</div>
+	     <a class="cv-link" href="https://docs.google.com/document/d/10YWrkIpYHDp3vAG0kMUPcppn3AShRM-f/edit
+" target="_blank" rel="noopener">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        CV
+      </a>
+    </div>
+
+    <!-- 03 -->
+    <div class="card">
+      <span class="card-number">03</span>
+      <div class="photo-wrap">
+	  <img src="https://lh3.googleusercontent.com/d/1NwhZyCAu6ckLVzlWOaTnED9lHy_ZuZlu" alt="" onerror="this.parentElement.innerHTML='<div class=initials>ΓΜ</div>'" />
+	  <!--
+        <img src="https://static.wixstatic.com/media/a807b3_1cb61829390844dc80b352756bcf79f5~mv2.jpg/v1/fill/w_200,h_200,al_c,q_80,enc_avif,quality_auto/img.jpg" alt="Κρέων Φλωρίδης" onerror="this.parentElement.innerHTML='<div class=initials>ΚΦ</div>'" />
+     -->
+	 </div>
+      <div class="name">Κρέων Φλωρίδης</div>
+    </div>
+
+    <!-- 04 -->
+    <div class="card">
+      <span class="card-number">04</span>
+      <div class="photo-wrap">
+	  <img src="https://lh3.googleusercontent.com/d/1BRp_i4N2-yTYWmw2jLTVu2JdixCoVYo2" alt="Αλέξανδρος Τσουκαλής" onerror="this.parentElement.innerHTML='<div class=initials>ΑΤ</div>'" />
+    </div>
+      <div class="name">Αλέξανδρος Τσουκαλής</div>
+    </div>
+
+    <!-- 05 -->
+    <div class="card">
+      <span class="card-number">05</span>
+      <div class="photo-wrap">
+	  <img src="https://lh3.googleusercontent.com/d/1_FukGp_W3quF7mGsiof7c2pn6YF864XR" alt="" onerror="this.parentElement.innerHTML='<div class=initials>ΓΜ</div>'" />
+        <!--
+		<img src="https://static.wixstatic.com/media/a807b3_4684c13dd9944a6ebf2678cbfdb69d4a~mv2.jpg/v1/fill/w_200,h_200,al_c,q_80,enc_avif,quality_auto/img.jpg" alt="Πρόδρομος Παπαβασιλείου" onerror="this.parentElement.innerHTML='<div class=initials>ΠΠ</div>'" />
+      -->
+	  </div>
+      <div class="name">Πρόδρομος Παπαβασιλείου</div>
+    </div>
+
+    <!-- 06 -->
+    <div class="card">
+      <span class="card-number">06</span>
+      <div class="photo-wrap">
+	  
+<img src="https://lh3.googleusercontent.com/d/1QTVpJo81Mpk_8apBB4frdN2KG0YZ3IGD" alt="" onerror="this.parentElement.innerHTML='<div class=initials>ΓΜ</div>'" />
+        <!--
+		<img src="https://static.wixstatic.com/media/a807b3_250da92efd62445db294b500eb7539af~mv2.jpg/v1/fill/w_200,h_200,al_c,q_80,enc_avif,quality_auto/img.jpg" alt="Ντίνος Γεωργούλας" onerror="this.parentElement.innerHTML='<div class=initials>ΝΓ</div>'" />
+      -->
+	  </div>
+      <div class="name">Ντίνος Γεωργούλας</div>
+    </div>
+
+    <!-- 07 -->
+    <div class="card">
+      <span class="card-number">07</span>
+      <div class="photo-wrap">
+        <img src="https://static.wixstatic.com/media/a807b3_715346bdc3984abfb251d105318415bb~mv2.jpg/v1/fill/w_200,h_200,al_c,q_80,enc_avif,quality_auto/img.jpg" alt="Στάθης Παπουτσής" onerror="this.parentElement.innerHTML='<div class=initials>ΣΠ</div>'" />
+      </div>
+      <div class="name">Στάθης Παπουτσής</div>
+      <a class="cv-link" href="https://drive.google.com/file/d/1h5YXRK0Fdis9cyFJ2MiGLqEpJU3skfcv/view?usp=sharing" target="_blank" rel="noopener">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        CV
+      </a>
+    </div>
+
+    <!-- 08 -->
+    <div class="card">
+      <span class="card-number">08</span>
+      <div class="photo-wrap">
+	  <img src="https://lh3.googleusercontent.com/d/1Cuuz_rhSkwoOlHQ5NbJe3a-PVzTSgjfL" alt="Άγις Χαλιώτης" onerror="this.parentElement.innerHTML='<div class=initials>ΑΧ</div>'" />
+       </div>
+      <div class="name">Άγις Χαλιώτης</div>
+    </div>
+
+    <!-- 09 -->
+    <div class="card">
+      <span class="card-number">09</span>
+      <div class="photo-wrap">
+<img src="https://lh3.googleusercontent.com/d/15h80-Uq4GzYsj7JYzAGv-K7Ja6cUjEj2" alt="Χρήστος Σπίγκος" onerror="this.parentElement.innerHTML='<div class=initials>ΧΣ</div>'" />
+
+<!--       
+	   <img src="https://static.wixstatic.com/media/a807b3_a9d9afaf526d4e92b694bf82eb409747~mv2.jpg/v1/fill/w_200,h_200,al_c,q_80,enc_avif,quality_auto/img.jpg" alt="Χρίστος Σπίγκος" onerror="this.parentElement.innerHTML='<div class=initials>ΧΣ</div>'" />
+-->
+      </div>
+      <div class="name">Χρίστος Σπίγκος</div>
+      <a class="cv-link" href="https://docs.google.com/document/d/1aRsHYQMRpcpn1PPz_0YyQRpLhsXVEfNi/edit?usp=sharing&ouid=108725897099552772347&rtpof=true&sd=true" target="_blank" rel="noopener">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        CV
+      </a>
+    </div>
+
+    <!-- 10 -->
+    <div class="card">
+      <span class="card-number">10</span>
+      <div class="photo-wrap">
+      <img src="https://lh3.googleusercontent.com/d/1Xpxtg48ndsc5IVHhi9NEMRMYTvVN5H43" alt="Θεόδωρος Τσαγκαράκης" onerror="this.parentElement.innerHTML='<div class=initials>ΘΤ</div>'" />
+      </div>
+      <div class="name">Θεόδωρος Τσαγκαράκης</div>
+	  <!--
+      <a class="cv-link" href="https://docs.google.com/document/d/1UuwsqFeQ4cdpBdKUk3u6jh5AodkA8UQy/edit?usp=sharing&ouid=108725897099552772347&rtpof=true&sd=true" target="_blank" rel="noopener">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        CV
+      </a>
+	  -->
+    </div>
+
+    <!-- 11 -->
+    <div class="card">
+      <span class="card-number">11</span>
+      <div class="photo-wrap">
+	  <img src="https://lh3.googleusercontent.com/d/1daOM7iDLwMzFSO0PaTSIT5hjBkKfHSuj" alt="Σωτήρης Λαύκας" onerror="this.parentElement.innerHTML='<div class=initials>ΣΛ</div>'" />
+
+      </div>
+      <div class="name">Σωτήρης Λαύκας</div>
+      <a class="cv-link" href="https://docs.google.com/document/d/1UuwsqFeQ4cdpBdKUk3u6jh5AodkA8UQy/edit?usp=sharing&ouid=108725897099552772347&rtpof=true&sd=true" target="_blank" rel="noopener">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        CV
+      </a>
+    </div>
+
+    <!-- 12 -->
+    <div class="card">
+      <span class="card-number">12</span>
+      <div class="photo-wrap">
+        <img src="https://lh3.googleusercontent.com/d/120h8cvJLg4OPWlNHDgWghPB2LmIsTuwJ" alt="Θεόφιλος Ιωαννίδης" onerror="this.parentElement.innerHTML='<div class=initials>ΓΜ</div>'" />
+
+      </div>
+      <div class="name">Θεόφιλος Ιωαννίδης</div>
+      <a class="cv-link" href="https://docs.google.com/document/d/1LwU45V0F5GL6vDenGrOH1uzcWLxuQcDM/edit?usp=sharing&ouid=108725897099552772347&rtpof=true&sd=true" target="_blank" rel="noopener">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        CV
+      </a>
+    </div>
+
+    <!-- 13 -->
+    <div class="card">
+      <span class="card-number">13</span>
+      <div class="photo-wrap">
+        <img src="https://lh3.googleusercontent.com/d/1Pv10Ut4qe8FYnR0nSC1rvajT6IdZWhFf" alt="Αντρέας Τασσής" onerror="this.parentElement.innerHTML='<div class=initials>ΑΤ</div>'" />
+      </div>
+      <div class="name">Αντρέας Τασσής</div>
+      <a class="cv-link" href="https://docs.google.com/document/d/1LwU45V0F5GL6vDenGrOH1uzcWLxuQcDM/edit?usp=sharing&ouid=108725897099552772347&rtpof=true&sd=true" target="_blank" rel="noopener">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        CV
+      </a>
+    </div>
+
+    <!-- 14 -->
+    <div class="card">
+      <span class="card-number">14</span>
+      <div class="photo-wrap">
+        <img src="https://lh3.googleusercontent.com/d/1llcZULpnGAArqiCcDIdwVGwNOSjjohN4" alt="Βασίλης Παπανικολάου" onerror="this.parentElement.innerHTML='<div class=initials>ΒΠ</div>'" />
+
+      </div>
+      <div class="name">Βασίλης Παπανικολάου</div>
+    </div>
+
+    <!-- 15 -->
+    <div class="card">
+      <span class="card-number">15</span>
+      <div class="photo-wrap">
+        <img src="https://static.wixstatic.com/media/a807b3_68bb21d9a3944dac930756c7ce0c3218~mv2.png/v1/fill/w_200,h_200,al_c,q_80,enc_avif,quality_auto/img.png" alt="Νίκος Δαβίδ" onerror="this.parentElement.innerHTML='<div class=initials>ΝΔ</div>'" />
+      </div>
+      <div class="name">Νίκος Δαβίδ</div>
+      <a class="cv-link" href="https://nddet.netlify.app/" target="_blank" rel="noopener">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>
+        Βιογραφικό & Μήνυμα
+      </a>
+    </div>
+
+    <!-- 16 -->
+    <div class="card">
+      <span class="card-number">16</span>
+      <div class="photo-wrap">
+        <img src="https://lh3.googleusercontent.com/d/1ZsjiTPGXREpvDkFfoFn8WtsEEwKbWZ8l" alt="Σταύρος Κουμπιάς" onerror="this.parentElement.innerHTML='<div class=initials>ΣΚ</div>'" />
+
+      </div>
+      <div class="name">Σταύρος Κουμπιάς</div>
+      <a class="cv-link" href="https://koumbias.netlify.app/" target="_blank" rel="noopener">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>
+        Βιογραφικό & Μήνυμα
+      </a>
+    </div>
+
+    <!-- 17 -->
+    <div class="card">
+      <span class="card-number">17</span>
+      <div class="photo-wrap">
+	  <img src="https://lh3.googleusercontent.com/d/1MXrC_WgkNRmjEtAdRDXl5ZQKq1Rks_Pa" alt="" onerror="this.parentElement.innerHTML='<div class=initials>ΓΜ</div>'" />
+	  <!--
+	  <img src="https://drive.google.com/uc?export=view&id=1MXrC_WgkNRmjEtAdRDXl5ZQKq1Rks_Pa" alt="Name here" onerror="this.parentElement.innerHTML='<div class=initials>ΓΜ</div>'" />
+        
+		<img src="https://static.wixstatic.com/media/a807b3_dcf147cba78e4e83937408f6f042f9af~mv2.png/v1/fill/w_200,h_200,al_c,q_80,enc_avif,quality_auto/img.png" alt="Θεόδωρος Τζάμος" onerror="this.parentElement.innerHTML='<div class=initials>ΘΤ</div>'" />
+      -->
+	  </div>
+      <div class="name">Θεόδωρος Τζάμος</div>
+      <a class="cv-link" href="https://drive.google.com/file/d/1oKGMJ19k4lsTXiB-Gtvn5iFNuPTxqnaA/view?usp=sharing" target="_blank" rel="noopener">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        CV
+      </a>
+    </div>
+
+    <!-- 18 -->
+    <div class="card">
+      <span class="card-number">18</span>
+      <div class="photo-wrap">
+	  <img src="https://lh3.googleusercontent.com/d/1f6KMDagQbgVQf0qaPO4Cb0fuCl_Lx8rb" alt="" onerror="this.parentElement.innerHTML='<div class=initials>ΓΜ</div>'" />
+        <!--
+		<img src="https://static.wixstatic.com/media/a807b3_974d4362c0b1476a88e06fe51fccb98a~mv2.jpg/v1/fill/w_200,h_200,al_c,q_80,enc_avif,quality_auto/img.jpg" alt="Διονυσία Φούρλαρη" onerror="this.parentElement.innerHTML='<div class=initials>ΔΦ</div>'" />
+      -->
+	  </div>
+      <div class="name">Διονυσία Φούρλαρη</div>
+      <a class="cv-link" href="https://docs.google.com/document/d/1zytxdmSMcmBKouKD2CR-HMVN5gV8KMlm/edit?usp=drive_link&ouid=108725897099552772347&rtpof=true&sd=true" target="_blank" rel="noopener">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        CV
+      </a>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">Alumni 1976</div>
+    <div class="footer-copy">© 2026 Σχολή Ηλεκτρολόγων Μηχανικών · Πανεπιστήμιο Πατρών</div>
+    <div class="footer-links">
+      <a href="#">Φωτογραφίες</a>
+      <a href="#">Εκδηλώσεις</a>
+      <a href="#">Blog</a>
+      <a href="#">Μέλη</a>
+    </div>
+  </footer>
+
+</body>
+</html>

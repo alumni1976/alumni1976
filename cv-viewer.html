@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video & CV Split Page</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .column {
+            width: 50%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* LEFT COLUMN */
+        .left-column {
+            background-color: #1a1a24;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 16 / 9;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* RIGHT COLUMN */
+        .right-column {
+            background-color: #ffffff;
+            border-left: 1px solid #e1e8ed;
+        }
+
+        .doc-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+        }
+
+        /* MOBILE */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                overflow: auto;
+                height: auto;
+            }
+
+            .column {
+                width: 100%;
+                height: 50vh;
+            }
+
+            .left-column {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- LEFT: VIDEO -->
+    <div class="column left-column">
+        <div class="video-container">
+            <iframe
+                id="videoFrame"
+                allow="autoplay; fullscreen"
+                allowfullscreen>
+            </iframe>
+        </div>
+    </div>
+
+    <!-- RIGHT: CV -->
+    <div class="column right-column">
+        <iframe
+            id="cvFrame"
+            class="doc-iframe">
+        </iframe>
+    </div>
+
+<script>
+    // Read query string
+    const params = new URLSearchParams(window.location.search);
+
+    const mediaLink = params.get("media_link");
+    const cvLink = params.get("cv");
+
+    // Convert Google Drive links to preview mode
+    function convertDriveToPreview(url) {
+
+        if (!url) return "";
+
+        const match = url.match(/[-\w]{25,}/);
+
+        if (!match) return url;
+
+        return `https://drive.google.com/file/d/${match[0]}/preview`;
+    }
+
+    // VIDEO
+    if (mediaLink) {
+        document.getElementById("videoFrame").src =
+            convertDriveToPreview(mediaLink);
+    }
+
+    // CV
+    if (cvLink) {
+        document.getElementById("cvFrame").src =
+            convertDriveToPreview(cvLink);
+    }
+</script>
+
+</body>
+</html>

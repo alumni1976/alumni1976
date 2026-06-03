@@ -1968,3 +1968,23 @@ body.style-executive-alumni .theme-control select {
   font-size: 22px;
   margin-right: 0;
 }
+
+/* COMMUNITY MEMORIAL / CLEAN EMPTY LINKS */
+.community-links-memorial {
+  justify-content: center;
+}
+
+.community-memorial {
+  width: 100%;
+  color: var(--gold-light);
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  text-align: center;
+  opacity: .9;
+}
+
+.community-card-deceased {
+  border-color: rgba(201,168,76,.38);
+}

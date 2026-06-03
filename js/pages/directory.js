@@ -71,6 +71,14 @@ export async function afterRender() {
     return `${member.first_name || ''} ${member.last_name || ''}`.trim();
   }
 
+  function isDeceased(member) {
+    return String(member.status || '').toLowerCase() === 'deceased';
+  }
+
+  function memorialLabel(member) {
+    return isDeceased(member) ? '✝ Στη μνήμη' : '';
+  }
+
   function renderOptions(filter = '') {
     const q = filter.toLowerCase();
 
@@ -79,20 +87,26 @@ export async function afterRender() {
       .sort((a, b) => fullName(a).localeCompare(fullName(b), 'el'));
 
     optionsBox.innerHTML = filtered.map(m => {
+      const deceased = isDeceased(m);
       const thumb = googleDriveImage(m.photo_link, 'w120');
       const name = fullName(m);
+      const optionClass = deceased ? 'member-option member-option-deceased' : 'member-option';
+      const disabledAttr = deceased ? ' aria-disabled="true" title="Στη μνήμη"' : '';
 
       return `
-        <div class="member-option" data-id="${escapeHtml(m.id)}">
+        <div class="${optionClass}" data-id="${escapeHtml(m.id)}"${disabledAttr}>
           <div class="member-option-thumb">
             ${
               thumb
                 ? `<img src="${escapeHtml(thumb)}" alt="${escapeHtml(name)}">`
-                : `<span class="member-option-icon">👤</span>`
+                : `<span class="member-option-icon">${deceased ? '✝' : '👤'}</span>`
             }
           </div>
 
-          <span>${escapeHtml(name)}</span>
+          <div class="member-option-text">
+            <span>${escapeHtml(name)}</span>
+            ${deceased ? `<small>${escapeHtml(memorialLabel(m))}</small>` : ''}
+          </div>
         </div>
       `;
     }).join('');
@@ -150,6 +164,10 @@ export async function afterRender() {
 
     const member = members.find(m => String(m.id) === option.dataset.id);
     if (!member) return;
+
+    if (isDeceased(member)) {
+      return;
+    }
 
     renderDetails(member);
   });

@@ -1932,10 +1932,39 @@ body.style-executive-alumni .theme-control select {
     max-width: 100%;
   }
 }
-/* Hide desktop menu scrollbar / spinner-like control */
-@media (min-width: 981px) {
-  #menu,
-  .site-menu {
-    overflow: visible;
-  }
+
+
+
+/* Directory memorial status in member dropdown */
+.member-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.member-option-text small {
+  color: var(--gold-light);
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+}
+
+.member-option-deceased {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.member-option-deceased:hover {
+  background: transparent;
+}
+
+.member-option-deceased .member-option-thumb {
+  border-color: rgba(201, 168, 76, 0.36);
+  background: rgba(201, 168, 76, 0.08);
+}
+
+.member-option-deceased .member-option-icon {
+  color: var(--gold-light);
+  font-size: 22px;
+  margin-right: 0;
 }

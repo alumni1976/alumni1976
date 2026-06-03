@@ -71,6 +71,10 @@ function buildLinks(member) {
   return links.join("");
 }
 
+function isDeceased(member) {
+  return String(member.status || "active").trim().toLowerCase() === "deceased";
+}
+
 export async function render() {
   return `
     <div class="community-header">
@@ -135,9 +139,13 @@ export async function afterRender() {
       const fullName = `${first} ${last}`.trim();
       const photoSrc = googleDriveImage(member.photo_link, "w900");
       const links = buildLinks(member);
+      const deceased = isDeceased(member);
+      const footerContent = deceased
+        ? `<div class="community-memorial">✝ Στη μνήμη</div>`
+        : links;
 
       return `
-        <article class="community-card">
+        <article class="community-card${deceased ? " community-card-deceased" : ""}">
           <h3 class="community-name">${escapeHtml(fullName)}</h3>
 
           <div class="community-photo-frame">
@@ -153,9 +161,11 @@ export async function afterRender() {
             `}
           </div>
 
-          <div class="community-links">
-            ${links || `<span class="community-no-links">Δεν υπάρχουν σύνδεσμοι</span>`}
-          </div>
+          ${footerContent ? `
+            <div class="community-links${deceased ? " community-links-memorial" : ""}">
+              ${footerContent}
+            </div>
+          ` : ""}
         </article>
       `;
     }).join("");

@@ -6,6 +6,7 @@ const routes = {
   alumnievents: () => import('./pages/alumnievents.js'),
   eventregistration: () => import('./pages/eventregistration.js'),
   directory: () => import('./pages/directory.js'),
+  faq: () => import('./pages/faq.js'),
   blog: () => import('./pages/blog.js'),
   thinktank: () => import('./pages/thinktank.js'),
   contact: () => import('./pages/contact.js')

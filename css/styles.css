@@ -2182,3 +2182,142 @@ body.style-executive-alumni .theme-control select {
     gap: 5px;
   }
 }
+
+/* ==========================================
+   ALUMNIPROFS PHOTO FRAME REFINEMENT
+   Clear separation between each professor photo and its legend.
+========================================== */
+
+.prof-section {
+  margin-bottom: 64px;
+}
+
+.prof-section-label {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  margin-bottom: 14px;
+  background: rgba(245,237,216,.04);
+}
+
+.prof-section-title {
+  font-family: var(--font-display);
+  color: var(--parchment);
+  font-size: clamp(1.9rem, 3vw, 2.8rem);
+  line-height: 1.12;
+  margin-bottom: 10px;
+}
+
+.prof-section-subtitle {
+  color: var(--parchment-dark);
+  max-width: 760px;
+  margin-bottom: 32px;
+}
+
+.prof-section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-strong), transparent);
+  margin: 22px 0 58px;
+}
+
+.prof-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 30px;
+  align-items: stretch;
+}
+
+.prof-card {
+  background: rgba(245,237,216,.045);
+  border: 1px solid var(--border);
+  padding: 16px 16px 18px;
+  box-shadow: 0 18px 45px rgba(0,0,0,.18);
+  transition: transform .25s ease, border-color .25s ease, background .25s ease;
+}
+
+.prof-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--gold);
+  background: rgba(245,237,216,.07);
+}
+
+.prof-card.memorial {
+  border-color: rgba(201,168,76,.35);
+}
+
+.prof-photo-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: rgba(0,0,0,.20);
+  border: 1px solid var(--border-strong);
+  padding: 7px;
+  margin-bottom: 15px;
+}
+
+.prof-photo-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  border: 1px solid rgba(255,255,255,.12);
+  pointer-events: none;
+}
+
+.prof-photo-wrap img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  filter: saturate(.96) contrast(1.03);
+  transition: transform .35s ease;
+}
+
+.prof-card:hover .prof-photo-wrap img {
+  transform: scale(1.025);
+}
+
+.prof-initials {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  color: var(--gold-light);
+  background: radial-gradient(circle at 30% 25%, rgba(201,168,76,.24), rgba(18,24,38,.86));
+}
+
+.prof-name {
+  font-family: var(--font-display);
+  color: var(--gold-light);
+  font-size: 1.2rem;
+  line-height: 1.22;
+  text-align: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.prof-dates {
+  margin-top: 7px;
+  color: var(--parchment-dark);
+  font-size: .92rem;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .prof-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .prof-card {
+    max-width: 380px;
+    margin: 0 auto;
+  }
+}

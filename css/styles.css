@@ -2102,3 +2102,83 @@ body.style-executive-alumni .theme-control select {
     padding: 0 1.05rem 1.1rem;
   }
 }
+
+
+/* ==========================================
+   HEADER MENU + STYLE SELECTOR LAYOUT FIX
+   Style selector is placed under the menu, aligned right.
+   This gives tablet screens the full menu width.
+========================================== */
+
+.nav-menu-area {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 7px;
+}
+
+.nav-menu-area #menu,
+.nav-menu-area .site-menu {
+  width: 100%;
+  justify-content: flex-end;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.theme-control {
+  align-self: flex-end;
+  margin-left: 0;
+  padding-left: 0;
+  border-left: 0;
+}
+
+.theme-control select {
+  max-width: 240px;
+}
+
+@media (max-width: 1199px) {
+  .site-nav,
+  nav {
+    gap: 1rem;
+  }
+
+  .nav-menu-area #menu,
+  .nav-menu-area .site-menu {
+    justify-content: flex-start;
+    padding-bottom: 2px;
+  }
+
+  .theme-control {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 980px) {
+  .nav-menu-area {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .theme-control {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .theme-control select {
+    max-width: min(100%, 260px);
+  }
+}
+
+@media (max-width: 520px) {
+  .theme-control {
+    align-items: flex-end;
+    flex-direction: column;
+    gap: 5px;
+  }
+}

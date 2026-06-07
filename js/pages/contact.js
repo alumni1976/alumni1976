@@ -234,10 +234,10 @@ export async function afterRender() {
 
   try {
     const dataset = await supabaseFetch(
-      "/rest/v1/members?select=id,first_name,last_name,email,photo_link&order=last_name.asc"
+      "/rest/v1/members?select=id,first_name,last_name,email,photo_link,status&order=last_name.asc"
     );
 
-    members = dataset || [];
+    members = (dataset || []).filter(member => member.status !== "deceased");
 
   } catch (err) {
     console.error(err);

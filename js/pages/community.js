@@ -36,7 +36,14 @@ function hasValue(value) {
 
 function buildLinks(member) {
   const links = [];
-  const cvLink = hasValue(member.cv_link) ? String(member.cv_link).trim() : "";
+
+  // Prefer Cloudinary CV URL, fall back to Google Drive
+  const cvLink = hasValue(member.cv_link_clord)
+    ? String(member.cv_link_clord).trim()
+    : hasValue(member.cv_link)
+      ? String(member.cv_link).trim()
+      : "";
+
   const mediaLink = hasValue(member.media_link) ? String(member.media_link).trim() : "";
 
   if (cvLink) {
@@ -73,6 +80,17 @@ function buildLinks(member) {
 
 function isDeceased(member) {
   return String(member.status || "active").trim().toLowerCase() === "deceased";
+}
+
+function resolvePhotoSrc(member) {
+  // Prefer Cloudinary URL; fall back to Google Drive URL
+  if (hasValue(member.photo_link_clord)) {
+    return String(member.photo_link_clord).trim();
+  }
+  if (hasValue(member.photo_link)) {
+    return googleDriveImage(member.photo_link, "w900");
+  }
+  return "";
 }
 
 export async function render() {
@@ -119,7 +137,7 @@ export async function afterRender() {
     const visibleMembers = members.filter(member => {
       const first = hasValue(member.first_name);
       const last = hasValue(member.last_name);
-      const photo = hasValue(member.photo_link);
+      const photo = hasValue(member.photo_link_clord) || hasValue(member.photo_link);
 
       return photo && (first || last);
     });
@@ -137,7 +155,7 @@ export async function afterRender() {
       const first = member.first_name || "";
       const last = member.last_name || "";
       const fullName = `${first} ${last}`.trim();
-      const photoSrc = googleDriveImage(member.photo_link, "w900");
+      const photoSrc = resolvePhotoSrc(member);
       const links = buildLinks(member);
       const deceased = isDeceased(member);
       const footerContent = deceased

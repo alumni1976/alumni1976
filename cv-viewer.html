@@ -119,14 +119,23 @@
 
     // Convert Google Drive links to preview mode
     function convertDriveToPreview(url) {
+        if (!url) return "";
+        const match = url.match(/[-\w]{25,}/);
+        if (!match) return url;
+        return `https://drive.google.com/file/d/${match[0]}/preview`;
+    }
 
+    // Resolve any URL to a displayable src
+    function resolveViewerUrl(url) {
         if (!url) return "";
 
-        const match = url.match(/[-\w]{25,}/);
+        // Google Drive — use native preview
+        if (url.includes("drive.google.com")) {
+            return convertDriveToPreview(url);
+        }
 
-        if (!match) return url;
-
-        return `https://drive.google.com/file/d/${match[0]}/preview`;
+        // Cloudinary or any other public URL — use Google Docs Viewer
+        return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
     }
 
     // VIDEO
@@ -138,7 +147,7 @@
     // CV
     if (cvLink) {
         document.getElementById("cvFrame").src =
-            convertDriveToPreview(cvLink);
+            resolveViewerUrl(cvLink);
     }
 </script>
 

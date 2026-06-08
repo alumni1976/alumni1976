@@ -20,32 +20,17 @@ function escapeHtml(text = "") {
     .replaceAll("'", "&#039;");
 }
 
-function googleDriveImage(url, size = "w1200") {
-  if (!url) return "";
+function photoTitle(photo) {
+  return String(photo.title || "Φωτογραφία Alumni 1976").trim() || "Φωτογραφία Alumni 1976";
+}
 
-  const cleanUrl = String(url).trim();
-
-  const patterns = [
-    /\/file\/d\/([^/]+)/,
-    /\/d\/([^/]+)/,
-    /[?&]id=([^&]+)/,
-    /thumbnail\?id=([^&]+)/,
-    /uc\?id=([^&]+)/
-  ];
-
-  for (const pattern of patterns) {
-    const match = cleanUrl.match(pattern);
-    if (match && match[1]) {
-      return `https://drive.google.com/thumbnail?id=${match[1]}&sz=${size}`;
-    }
-  }
-
-  return cleanUrl;
+function photoUrl(photo) {
+  return String(photo.url_cloud || "").trim();
 }
 
 async function fetchAlumniPhotos() {
   const response = await fetch(
-    `${SUPABASE_URL}/rest/v1/alumniphotos?select=id,title,url&order=id.asc`,
+    `${SUPABASE_URL}/rest/v1/alumniphotos?select=id,title,url_cloud&order=id.asc`,
     {
       headers: {
         apikey: SUPABASE_KEY,
@@ -61,7 +46,7 @@ async function fetchAlumniPhotos() {
     throw data || new Error("Failed to load alumni photos");
   }
 
-  return data || [];
+  return (data || []).filter(photo => photoUrl(photo));
 }
 
 export async function render() {
@@ -192,14 +177,13 @@ function renderPhotoPair(immediate = false) {
     const currentPhotos = getCurrentPairPhotos();
 
     photoPair.innerHTML = currentPhotos.map(photo => {
-      const title = photo.title?.trim() || "Φωτογραφία Alumni 1976";
-      const imgSrc = googleDriveImage(photo.url, "w1200");
-      const fullSrc = googleDriveImage(photo.url, "w2000");
+      const title = photoTitle(photo);
+      const imgSrc = photoUrl(photo);
 
       return `
         <article
           class="photo-slide-card"
-          data-full="${escapeHtml(fullSrc)}"
+          data-full="${escapeHtml(imgSrc)}"
           data-title="${escapeHtml(title)}"
         >
           <div class="photo-slide-frame">

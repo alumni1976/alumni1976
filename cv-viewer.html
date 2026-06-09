@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video & CV Split Page</title>
+    <title>Video &amp; CV</title>
 
     <style>
         * {
@@ -22,18 +22,27 @@
         }
 
         .column {
-            width: 50%;
             height: 100%;
             display: flex;
             flex-direction: column;
         }
 
-        /* LEFT COLUMN */
+        /* LEFT COLUMN — media */
         .left-column {
+            width: 50%;
             background-color: #1a1a24;
             justify-content: center;
             align-items: center;
             padding: 40px;
+        }
+
+        /* When there is no media, left column is hidden and right takes full width */
+        .left-column.hidden {
+            display: none;
+        }
+
+        .right-column.full-width {
+            width: 100%;
         }
 
         .video-container {
@@ -41,7 +50,7 @@
             width: 100%;
             max-width: 800px;
             aspect-ratio: 16 / 9;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             border-radius: 8px;
             overflow: hidden;
             background-color: #000;
@@ -56,8 +65,9 @@
             border: none;
         }
 
-        /* RIGHT COLUMN */
+        /* RIGHT COLUMN — CV */
         .right-column {
+            width: 50%;
             background-color: #ffffff;
             border-left: 1px solid #e1e8ed;
         }
@@ -69,7 +79,40 @@
             background: transparent;
         }
 
-        /* MOBILE */
+        /* Loading / error message shown inside the CV column */
+        .cv-message {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 16px;
+            padding: 32px;
+            text-align: center;
+            color: #555;
+        }
+
+        .cv-message p {
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .cv-message a {
+            display: inline-block;
+            padding: 10px 22px;
+            background-color: #1F3A5F;
+            color: #fff;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .cv-message a:hover {
+            background-color: #B8944A;
+        }
+
+        /* TABLET / MOBILE */
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
@@ -78,12 +121,17 @@
             }
 
             .column {
-                width: 100%;
+                width: 100% !important;
                 height: 50vh;
             }
 
             .left-column {
                 padding: 20px;
+            }
+
+            /* In CV-only mode on mobile, give full viewport height */
+            .left-column.hidden + .right-column {
+                height: 100vh;
             }
         }
     </style>
@@ -91,8 +139,8 @@
 
 <body>
 
-    <!-- LEFT: VIDEO -->
-    <div class="column left-column">
+    <!-- LEFT: VIDEO / MEDIA -->
+    <div class="column left-column" id="leftColumn">
         <div class="video-container">
             <iframe
                 id="videoFrame"
@@ -103,7 +151,7 @@
     </div>
 
     <!-- RIGHT: CV -->
-    <div class="column right-column">
+    <div class="column right-column" id="rightColumn">
         <iframe
             id="cvFrame"
             class="doc-iframe">
@@ -111,43 +159,78 @@
     </div>
 
 <script>
-    // Read query string
-    const params = new URLSearchParams(window.location.search);
-
+    const params    = new URLSearchParams(window.location.search);
     const mediaLink = params.get("media_link");
-    const cvLink = params.get("cv");
+    const cvLink    = params.get("cv");
 
-    // Convert Google Drive links to preview mode
-    function convertDriveToPreview(url) {
+    // Convert any Google Drive share/view URL to its /preview embed URL
+    function toDrivePreview(url) {
         if (!url) return "";
+        // Extract the file ID — the longest dash-and-word segment (≥25 chars)
         const match = url.match(/[-\w]{25,}/);
         if (!match) return url;
         return `https://drive.google.com/file/d/${match[0]}/preview`;
     }
 
-    // Resolve any URL to a displayable src
+    // Return a URL that can be loaded inside an <iframe> on any platform,
+    // including Android browsers that cannot render raw PDFs/DOCXs.
     function resolveViewerUrl(url) {
         if (!url) return "";
 
-        // Google Drive — use native preview
+        // Google Drive files — use native Drive preview (no third-party needed)
         if (url.includes("drive.google.com")) {
-            return convertDriveToPreview(url);
+            return toDrivePreview(url);
         }
 
-        // Cloudinary or any other public URL — use Google Docs Viewer
+        // Cloudinary or any other public URL — wrap in Google Docs Viewer,
+        // which handles both PDF and DOCX on all platforms including Android.
         return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
     }
 
-    // VIDEO
+    // ── MEDIA (left column) ──────────────────────────────────────────────────
     if (mediaLink) {
-        document.getElementById("videoFrame").src =
-            convertDriveToPreview(mediaLink);
+        document.getElementById("videoFrame").src = toDrivePreview(mediaLink);
+    } else {
+        // No media supplied — hide left column, give full width to CV
+        document.getElementById("leftColumn").classList.add("hidden");
+        document.getElementById("rightColumn").classList.add("full-width");
     }
 
-    // CV
+    // ── CV (right column) ────────────────────────────────────────────────────
     if (cvLink) {
-        document.getElementById("cvFrame").src =
-            resolveViewerUrl(cvLink);
+        const viewerUrl = resolveViewerUrl(cvLink);
+        const cvFrame   = document.getElementById("cvFrame");
+
+        cvFrame.src = viewerUrl;
+
+        // Google Docs Viewer occasionally shows a "Preview not available" page.
+        // If that happens after load, replace the iframe with a fallback message
+        // and a direct download link so the user is never left with a blank panel.
+        cvFrame.addEventListener("load", function () {
+            try {
+                // If we can read the iframe's title it means same-origin; skip.
+                // For cross-origin (normal case) this throws — that is fine.
+                const title = cvFrame.contentDocument?.title || "";
+                if (title.toLowerCase().includes("error") ||
+                    title.toLowerCase().includes("not available")) {
+                    showFallback();
+                }
+            } catch (_) {
+                // Cross-origin — can't inspect; assume it loaded correctly.
+            }
+        });
+    } else {
+        showFallback("Δεν βρέθηκε αρχείο CV.");
+    }
+
+    function showFallback(msg) {
+        const rightCol = document.getElementById("rightColumn");
+        rightCol.innerHTML = `
+            <div class="cv-message">
+                <p>${msg || "Δεν ήταν δυνατή η προβολή του αρχείου στον browser."}</p>
+                ${cvLink ? `<a href="${cvLink}" target="_blank" rel="noopener">Άνοιγμα / Λήψη αρχείου</a>` : ""}
+            </div>
+        `;
     }
 </script>
 

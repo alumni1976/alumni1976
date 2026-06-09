@@ -44,16 +44,22 @@ function buildLinks(member) {
       ? String(member.cv_link).trim()
       : "";
 
-  const mediaLink = hasValue(member.media_link) ? String(member.media_link).trim() : "";
+  const mediaLink = hasValue(member.media_link)
+    ? String(member.media_link).trim()
+    : "";
 
+  // CV button — always routed through cv-viewer.html so Android can render
+  // PDFs and DOCXs from both Google Drive and Cloudinary via Google Docs Viewer
   if (cvLink) {
+    const qs = new URLSearchParams({ cv: cvLink });
     links.push(`
-      <a class="community-link-btn" href="${escapeHtml(cvLink)}" target="_blank" rel="noopener">
+      <a class="community-link-btn" href="cv-viewer.html?${qs.toString()}" target="_blank" rel="noopener">
         CV
       </a>
     `);
   }
 
+  // Media button — direct link (video/audio plays natively on all platforms)
   if (mediaLink) {
     links.push(`
       <a class="community-link-btn" href="${escapeHtml(mediaLink)}" target="_blank" rel="noopener">
@@ -62,15 +68,12 @@ function buildLinks(member) {
     `);
   }
 
+  // CV & Media button — split-view via cv-viewer.html
   if (cvLink && mediaLink) {
-    const qs = new URLSearchParams({
-      cv: cvLink,
-      media_link: mediaLink
-    });
-
+    const qs = new URLSearchParams({ cv: cvLink, media_link: mediaLink });
     links.push(`
       <a class="community-link-btn community-link-btn-featured" href="cv-viewer.html?${qs.toString()}" target="_blank" rel="noopener">
-        CV & Media
+        CV &amp; Media
       </a>
     `);
   }

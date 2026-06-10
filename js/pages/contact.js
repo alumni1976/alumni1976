@@ -25,28 +25,8 @@ function displayName(member) {
   return `${member.first_name || ""} ${member.last_name || ""}`.trim();
 }
 
-function googleDriveImage(url, size = "w160") {
-  if (!url) return "";
-
-  const value = String(url).trim();
-
-  if (!value) return "";
-
-  if (value.includes("drive.google.com")) {
-    const match =
-      value.match(/\/d\/([^/]+)/) ||
-      value.match(/[?&]id=([^&]+)/);
-
-    if (match && match[1]) {
-      return `https://drive.google.com/thumbnail?id=${encodeURIComponent(match[1])}&sz=${size}`;
-    }
-  }
-
-  return value;
-}
-
-function memberPhotoMarkup(member, size = "w160", className = "") {
-  const photo = googleDriveImage(member.photo_link, size);
+function memberPhotoMarkup(member, className = "") {
+  const photo = String(member.photo_link_clord || "").trim();
   const name = displayName(member) || fullName(member);
 
   if (photo) {
@@ -234,7 +214,7 @@ export async function afterRender() {
 
   try {
     const dataset = await supabaseFetch(
-      "/rest/v1/members?select=id,first_name,last_name,email,photo_link,status&order=last_name.asc"
+      "/rest/v1/members?select=id,first_name,last_name,email,photo_link_clord,status&order=last_name.asc"
     );
 
     members = (dataset || []).filter(member => member.status !== "deceased");
@@ -272,7 +252,7 @@ export async function afterRender() {
         data-id="${escapeHtml(member.id)}"
       >
         <span class="event-member-option-thumb">
-          ${memberPhotoMarkup(member, "w120", "event-member-thumb-img")}
+          ${memberPhotoMarkup(member, "event-member-thumb-img")}
         </span>
         <span class="event-member-option-name">
           ${escapeHtml(fullName(member))}
@@ -306,7 +286,7 @@ export async function afterRender() {
     selectedMemberBox.innerHTML = `
       <div class="selected-member-card">
         <div class="selected-member-photo-wrap">
-          ${memberPhotoMarkup(selectedMember, "w420", "selected-member-photo")}
+          ${memberPhotoMarkup(selectedMember, "selected-member-photo")}
         </div>
 
         <div class="selected-member-info">

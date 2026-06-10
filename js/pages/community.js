@@ -7,29 +7,6 @@ function escapeHtml(text = "") {
     .replaceAll("'", "&#039;");
 }
 
-function googleDriveImage(url, size = "w800") {
-  if (!url) return "";
-
-  const cleanUrl = String(url).trim();
-
-  const patterns = [
-    /\/file\/d\/([^/]+)/,
-    /\/d\/([^/]+)/,
-    /[?&]id=([^&]+)/,
-    /thumbnail\?id=([^&]+)/,
-    /uc\?id=([^&]+)/
-  ];
-
-  for (const pattern of patterns) {
-    const match = cleanUrl.match(pattern);
-    if (match && match[1]) {
-      return `https://drive.google.com/thumbnail?id=${match[1]}&sz=${size}`;
-    }
-  }
-
-  return cleanUrl;
-}
-
 function hasValue(value) {
   return value && String(value).trim() !== "";
 }
@@ -37,19 +14,16 @@ function hasValue(value) {
 function buildLinks(member) {
   const links = [];
 
-  // Prefer Cloudinary CV URL, fall back to Google Drive
   const cvLink = hasValue(member.cv_link_clord)
     ? String(member.cv_link_clord).trim()
-    : hasValue(member.cv_link)
-      ? String(member.cv_link).trim()
-      : "";
+    : "";
 
-  const mediaLink = hasValue(member.media_link)
-    ? String(member.media_link).trim()
+  const mediaLink = hasValue(member.media_link_clord)
+    ? String(member.media_link_clord).trim()
     : "";
 
   // CV button — always routed through cv-viewer.html so Android can render
-  // PDFs and DOCXs from both Google Drive and Cloudinary via Google Docs Viewer
+  // PDFs and DOCXs from Cloudinary via Google Docs Viewer
   if (cvLink) {
     const qs = new URLSearchParams({ cv: cvLink });
     links.push(`
@@ -86,14 +60,9 @@ function isDeceased(member) {
 }
 
 function resolvePhotoSrc(member) {
-  // Prefer Cloudinary URL; fall back to Google Drive URL
-  if (hasValue(member.photo_link_clord)) {
-    return String(member.photo_link_clord).trim();
-  }
-  if (hasValue(member.photo_link)) {
-    return googleDriveImage(member.photo_link, "w900");
-  }
-  return "";
+  return hasValue(member.photo_link_clord)
+    ? String(member.photo_link_clord).trim()
+    : "";
 }
 
 export async function render() {
@@ -140,7 +109,7 @@ export async function afterRender() {
     const visibleMembers = members.filter(member => {
       const first = hasValue(member.first_name);
       const last = hasValue(member.last_name);
-      const photo = hasValue(member.photo_link_clord) || hasValue(member.photo_link);
+      const photo = hasValue(member.photo_link_clord);
 
       return photo && (first || last);
     });

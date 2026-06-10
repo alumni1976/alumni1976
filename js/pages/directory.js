@@ -88,8 +88,11 @@ export async function afterRender() {
 
     optionsBox.innerHTML = filtered.map(m => {
       const deceased = isDeceased(m);
-      const thumb = googleDriveImage(m.photo_link, 'w120');
-      const name = fullName(m);
+	  console.log(m.photo_link_clord)
+     // const thumb = googleDriveImage(m.photo_link, 'w120');
+const thumb = String(m.photo_link_clord || '').trim();
+console.log('thumb:', JSON.stringify(thumb), 'truthy:', !!thumb);     
+	 const name = fullName(m);
       const optionClass = deceased ? 'member-option member-option-deceased' : 'member-option';
       const disabledAttr = deceased ? ' aria-disabled="true" title="Στη μνήμη"' : '';
 
@@ -113,20 +116,18 @@ export async function afterRender() {
   }
 
   function renderDetails(member) {
-    const photo = googleDriveImage(member.photo_link, 'w700');
+    //const photo = googleDriveImage(member.photo_link, 'w700');
+	const photo = String(member.photo_link_clord || '').trim();
+console.log('details photo:', JSON.stringify(photo), 'truthy:', !!photo);
     const avatar = `<div class="member-photo avatar-gold">👤</div>`;
 
     detailsBox.innerHTML = `
-      <button id="backToSearch" class="btn-outline" type="button">
-        ← Επιστροφή στη λίστα
-      </button>
-
       <div class="member-card">
         ${
-  photo
-    ? `<img class="member-photo" src="${escapeHtml(photo)}" alt="${escapeHtml(displayName(member))}">`
-    : avatar
-}
+          photo
+            ? `<img class="member-photo" src="${escapeHtml(photo)}" alt="${escapeHtml(displayName(member))}">`
+            : avatar
+        }
 
         <div>
           <h3>${escapeHtml(displayName(member))}</h3>
@@ -136,22 +137,14 @@ export async function afterRender() {
           <p><strong>Διεύθυνση:</strong> ${escapeHtml(member.address || '-')}</p>
 
           <div class="member-actions">
-            ${member.cv_link ? `<a class="btn-primary" href="${escapeHtml(member.cv_link)}" target="_blank">CV</a>` : ''}
-            ${member.media_link ? `<a class="btn-primary" href="${escapeHtml(member.media_link)}" target="_blank">Media</a>` : ''}
+            ${member.cv_link ? `<a class="btn-primary" href="${escapeHtml(member.cv_link)}" target="_blank" rel="noopener">CV</a>` : ''}
+            ${member.media_link ? `<a class="btn-primary" href="${escapeHtml(member.media_link)}" target="_blank" rel="noopener">Media</a>` : ''}
           </div>
         </div>
       </div>
     `;
 
-    optionsBox.innerHTML = '';
     searchInput.value = fullName(member);
-
-    document.getElementById('backToSearch').addEventListener('click', () => {
-      detailsBox.innerHTML = '';
-      searchInput.value = '';
-      renderOptions();
-      searchInput.focus();
-    });
   }
 
   searchInput.addEventListener('input', () => {

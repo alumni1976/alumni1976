@@ -83,7 +83,7 @@ class SupabaseMenuRepository {
 
     return this.fetchData(
       '/rest/v1/members' +
-      '?select=id,first_name,last_name,email,phone,address,cv_link,cv_link_clord,media_link,photo_link,photo_link_clord,status' +
+      '?select=id,first_name,last_name,email,phone,address,cv_link_clord,media_link_clord,photo_link_clord,status' +
       '&order=last_name.asc'
     );
 

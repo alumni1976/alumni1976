@@ -6,10 +6,13 @@ const SUPABASE_KEY =
 const PHOTOS_PER_VIEW = 2;
 const SLIDE_INTERVAL_MS = 5000;
 const FADE_DELAY_MS = 180;
+const MIN_SLIDE_INTERVAL_SEC = 3;
+const MAX_SLIDE_INTERVAL_SEC = 10;
 
 let photos = [];
 let currentPairIndex = 0;
 let slideshowTimer = null;
+let slideIntervalMs = SLIDE_INTERVAL_MS;
 
 function escapeHtml(text = "") {
   return String(text)
@@ -79,6 +82,18 @@ export async function render() {
 
         <div id="photoCarousel" class="photo-carousel hidden">
           <div id="photoPair" class="photo-pair"></div>
+
+          <div id="photoSpeedControl" class="photo-speed-control">
+            <label for="photoSpeedRange">Ταχύτητα εναλλαγής φωτογαφιών: <span id="photoSpeedValue">5</span>&nbsp;δευτερόλεπτα</label>
+            <input
+              type="range"
+              id="photoSpeedRange"
+              min="3"
+              max="10"
+              step="1"
+              value="5"
+            >
+          </div>
 
           <div id="photoDots" class="photo-dots"></div>
 
@@ -265,7 +280,7 @@ function startSlideshow() {
 
   if (photos.length <= PHOTOS_PER_VIEW) return;
 
-  slideshowTimer = window.setInterval(nextPhotoPair, SLIDE_INTERVAL_MS);
+  slideshowTimer = window.setInterval(nextPhotoPair, slideIntervalMs);
 }
 
 function stopSlideshow() {
@@ -283,6 +298,8 @@ function restartSlideshow() {
 function attachCarouselEvents() {
   const prevBtn = document.getElementById("photoPrev");
   const nextBtn = document.getElementById("photoNext");
+  const speedRange = document.getElementById("photoSpeedRange");
+  const speedValue = document.getElementById("photoSpeedValue");
 
   if (prevBtn) {
     prevBtn.onclick = () => {
@@ -294,6 +311,30 @@ function attachCarouselEvents() {
   if (nextBtn) {
     nextBtn.onclick = () => {
       nextPhotoPair();
+      restartSlideshow();
+    };
+  }
+
+  if (speedRange) {
+    speedRange.value = String(Math.round(slideIntervalMs / 1000));
+
+    if (speedValue) {
+      speedValue.textContent = speedRange.value;
+    }
+
+    speedRange.oninput = () => {
+      let seconds = Number(speedRange.value);
+
+      if (Number.isNaN(seconds)) seconds = SLIDE_INTERVAL_MS / 1000;
+
+      seconds = Math.min(Math.max(seconds, MIN_SLIDE_INTERVAL_SEC), MAX_SLIDE_INTERVAL_SEC);
+
+      slideIntervalMs = seconds * 1000;
+
+      if (speedValue) {
+        speedValue.textContent = String(seconds);
+      }
+
       restartSlideshow();
     };
   }

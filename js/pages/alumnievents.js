@@ -12,6 +12,10 @@ function escapeHtml(text = "") {
     .replaceAll("'", "&#039;");
 }
 
+function escapeHtmlMultiline(text = "") {
+  return escapeHtml(text).replaceAll("\n", "<br>");
+}
+
 function formatGreekDate(dateValue) {
   if (!dateValue) return "";
 
@@ -122,7 +126,7 @@ export async function afterRender() {
 
             <h3>${escapeHtml(event.title)}</h3>
 
-            ${event.location ? `<p class="event-location">📍 ${escapeHtml(event.location)}</p>` : ""}
+            ${event.location ? `<p class="event-location">📍 ${escapeHtmlMultiline(event.location)}</p>` : ""}
 
             <p class="event-description">${escapeHtml(event.description || "")}</p>
 

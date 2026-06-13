@@ -2321,3 +2321,8 @@ body.style-executive-alumni .theme-control select {
     margin: 0 auto;
   }
 }
+
+/* Preserve line breaks typed by members in any database-driven text content */
+p {
+  white-space: pre-wrap;
+}

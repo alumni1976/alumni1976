@@ -11,6 +11,8 @@ const POSTS_PAGE_SIZE = 10;
 let currentMember = null;
 let currentOffset = 0;
 let allPostsLoaded = false;
+let currentCategoryFilter = "all";
+let currentOwnOnly = false;
 
 function escapeHtml(text = "") {
   return String(text)
@@ -45,31 +47,8 @@ function memberInitials(member) {
   return `${first}${last}`.toUpperCase() || "Μ";
 }
 
-function googleDriveThumbnail(url) {
-  if (!url) return "";
-
-  const cleanUrl = String(url).trim();
-
-  const patterns = [
-    /\/file\/d\/([^/]+)/,
-    /\/d\/([^/]+)/,
-    /[?&]id=([^&]+)/,
-    /thumbnail\?id=([^&]+)/,
-    /uc\?id=([^&]+)/
-  ];
-
-  for (const pattern of patterns) {
-    const match = cleanUrl.match(pattern);
-    if (match && match[1]) {
-      return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w120`;
-    }
-  }
-
-  return cleanUrl;
-}
-
 function memberAvatar(member, avatarClass = "thinktank-avatar-48") {
-  const photo = googleDriveThumbnail(member?.photo_link);
+  const photo = String(member?.photo_link_clord || "").trim();
   const initials = memberInitials(member);
   const safeAvatarClass = escapeHtml(avatarClass);
 
@@ -206,6 +185,10 @@ export async function render() {
             Μπορείτε να γράψετε νέα ανάρτηση, να κάνετε σχόλια
             και να δηλώσετε ότι σας αρέσει μια δημοσίευση.
           </p>
+
+          <button id="thinktankLogoutBtn" class="btn-outline">
+            Αποσύνδεση
+          </button>
         </article>
 
         <article class="thinktank-card">
@@ -236,6 +219,21 @@ export async function render() {
         <article class="thinktank-card">
           <div class="section-tag">ΑΝΑΡΤΗΣΕΙΣ</div>
           <h2>Εγκεκριμένες αναρτήσεις</h2>
+
+          <div class="thinktank-filters" style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:16px;">
+            <select id="categoryFilter" class="thinktank-input" style="width:auto;">
+              <option value="all">Όλες οι κατηγορίες</option>
+              <option value="thought">Σκέψη</option>
+              <option value="memory">Ανάμνηση</option>
+              <option value="news">Νέα μέλους</option>
+              <option value="career">Πανεπιστήμιο &amp; επάγγελμα</option>
+            </select>
+
+            <label style="display:flex; align-items:center; gap:6px;">
+              <input type="checkbox" id="ownOnlyFilter">
+              Μόνο οι δικές μου αναρτήσεις
+            </label>
+          </div>
 
           <div id="postsList">
             <p>Φόρτωση αναρτήσεων...</p>
@@ -372,6 +370,33 @@ export async function afterRender() {
   document.getElementById("loadMorePostsBtn")?.addEventListener("click", async () => {
     await loadApprovedPosts(false);
   });
+
+  document.getElementById("categoryFilter")?.addEventListener("change", async (e) => {
+    currentCategoryFilter = e.target.value;
+    await resetAndLoadPosts();
+  });
+
+  document.getElementById("ownOnlyFilter")?.addEventListener("change", async (e) => {
+    currentOwnOnly = e.target.checked;
+    await resetAndLoadPosts();
+  });
+
+  document.getElementById("thinktankLogoutBtn")?.addEventListener("click", () => {
+    sessionStorage.removeItem("thinktankMember");
+    currentMember = null;
+    currentOffset = 0;
+    allPostsLoaded = false;
+    currentCategoryFilter = "all";
+    currentOwnOnly = false;
+
+    document.getElementById("thinktankPrivateArea")?.classList.add("hidden");
+    document.getElementById("thinktankLoginBox")?.classList.remove("hidden");
+
+    const passwordInput = document.getElementById("thinktankPassword");
+    const loginMessage = document.getElementById("thinktankLoginMessage");
+    if (passwordInput) passwordInput.value = "";
+    if (loginMessage) loginMessage.textContent = "";
+  });
 }
 
 function openPrivateArea() {
@@ -407,9 +432,18 @@ async function loadApprovedPosts(isFirstLoad = false) {
   }
 
   try {
-    const posts = await supabaseFetch(
-      `/rest/v1/posts?select=id,member_id,category,body,created_at,members(first_name,last_name,photo_link)&is_approved=eq.true&order=created_at.desc&offset=${currentOffset}&limit=${POSTS_PAGE_SIZE}`
-    );
+    let postsUrl =
+      `/rest/v1/posts?select=id,member_id,category,body,created_at,members(first_name,last_name,photo_link_clord)&is_approved=eq.true&order=created_at.desc&offset=${currentOffset}&limit=${POSTS_PAGE_SIZE}`;
+
+    if (currentCategoryFilter !== "all") {
+      postsUrl += `&category=eq.${encodeURIComponent(currentCategoryFilter)}`;
+    }
+
+    if (currentOwnOnly && currentMember) {
+      postsUrl += `&member_id=eq.${currentMember.member_id}`;
+    }
+
+    const posts = await supabaseFetch(postsUrl);
 
     if (!posts || posts.length === 0) {
       if (currentOffset === 0) {
@@ -432,7 +466,7 @@ async function loadApprovedPosts(isFirstLoad = false) {
     );
 
     const comments = await supabaseFetch(
-      `/rest/v1/post_comments?select=id,post_id,member_id,comment_text,created_at,members(first_name,last_name,photo_link)&is_approved=eq.true&post_id=in.(${postIds.join(",")})&order=created_at.asc`
+      `/rest/v1/post_comments?select=id,post_id,member_id,comment_text,created_at,members(first_name,last_name,photo_link_clord)&is_approved=eq.true&post_id=in.(${postIds.join(",")})&order=created_at.asc`
     );
 
     postsList.insertAdjacentHTML(

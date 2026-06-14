@@ -135,6 +135,41 @@ async function sendThinkTankEmail({ type, title = "", message = "" }) {
 
 export async function render() {
   return `
+    <style>
+      .thinktank-post-body {
+        position: relative;
+      }
+
+      .thinktank-post-body.collapsed .thinktank-post-text {
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+      }
+
+      .thinktank-post-body.expanded .thinktank-post-text {
+        max-height: none;
+        display: block;
+        -webkit-line-clamp: unset;
+      }
+
+      .thinktank-toggle-text {
+        display: none;
+        margin-top: 4px;
+        background: none;
+        border: none;
+        padding: 0;
+        color: var(--accent-color, #1a73e8);
+        cursor: pointer;
+        font-size: 0.9em;
+        float: right;
+      }
+
+      .thinktank-toggle-text.visible {
+        display: inline-block;
+      }
+    </style>
+
     <div class="profs-header">
       <div class="profs-eyebrow">MEMBERS ONLY</div>
 
@@ -486,7 +521,10 @@ async function loadApprovedPosts(isFirstLoad = false) {
               </div>
             </div>
 
-            <p>${escapeHtml(post.body)}</p>
+            <div class="thinktank-post-body collapsed">
+              <p class="thinktank-post-text">${escapeHtml(post.body)}</p>
+              <button class="thinktank-toggle-text" type="button" data-state="collapsed">περισσότερα...</button>
+            </div>
 
             <div class="post-actions">
               <button class="thinktank-action like-btn" data-post-id="${post.id}">
@@ -547,6 +585,29 @@ async function loadApprovedPosts(isFirstLoad = false) {
 }
 
 function attachPostEvents() {
+  document.querySelectorAll(".thinktank-post-body").forEach(wrap => {
+    const text = wrap.querySelector(".thinktank-post-text");
+    const button = wrap.querySelector(".thinktank-toggle-text");
+    if (!text || !button) return;
+
+    if (text.scrollHeight > text.clientHeight + 1) {
+      button.classList.add("visible");
+    }
+  });
+
+  document.querySelectorAll(".thinktank-toggle-text").forEach(button => {
+    if (button.dataset.bound === "true") return;
+
+    button.dataset.bound = "true";
+
+    button.addEventListener("click", () => {
+      const wrap = button.closest(".thinktank-post-body");
+      const expanded = wrap.classList.toggle("expanded");
+      wrap.classList.toggle("collapsed", !expanded);
+      button.textContent = expanded ? "λιγότερα..." : "περισσότερα...";
+    });
+  });
+
   document.querySelectorAll(".like-btn").forEach(button => {
     if (button.dataset.bound === "true") return;
 

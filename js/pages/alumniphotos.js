@@ -186,34 +186,73 @@ function renderPhotoPair(immediate = false) {
 
   if (!photoPair) return;
 
+  // First-time setup: create PHOTOS_PER_VIEW fixed slots once.
+  if (!photoPair.dataset.initialized) {
+    photoPair.innerHTML = Array.from({ length: PHOTOS_PER_VIEW }, () => `
+      <article class="photo-slide-card">
+        <div class="photo-slide-frame">
+          <img
+            src=""
+            alt=""
+            loading="lazy"
+          >
+        </div>
+
+        <h3></h3>
+      </article>
+    `).join("");
+
+    photoPair.dataset.initialized = "true";
+  }
+
   photoPair.classList.remove("is-visible");
 
   const draw = () => {
     const currentPhotos = getCurrentPairPhotos();
+    const cards = photoPair.querySelectorAll(".photo-slide-card");
 
-    photoPair.innerHTML = currentPhotos.map(photo => {
+    cards.forEach((card, index) => {
+      const photo = currentPhotos[index];
+      const img = card.querySelector("img");
+      const heading = card.querySelector("h3");
+
+      if (!photo) {
+        card.classList.add("photo-empty");
+        card.classList.remove("photo-error");
+        card.removeAttribute("data-full");
+        card.removeAttribute("data-title");
+
+        if (img) {
+          img.src = "";
+          img.alt = "";
+          img.onerror = null;
+        }
+
+        if (heading) heading.textContent = "";
+
+        return;
+      }
+
       const title = photoTitle(photo);
       const imgSrc = photoUrl(photo);
 
-      return `
-        <article
-          class="photo-slide-card"
-          data-full="${escapeHtml(imgSrc)}"
-          data-title="${escapeHtml(title)}"
-        >
-          <div class="photo-slide-frame">
-            <img
-              src="${escapeHtml(imgSrc)}"
-              alt="${escapeHtml(title)}"
-              loading="lazy"
-              onerror="this.closest('.photo-slide-card').classList.add('photo-error')"
-            >
-          </div>
+      card.classList.remove("photo-empty", "photo-error");
+      card.dataset.full = imgSrc;
+      card.dataset.title = title;
 
-          <h3>${escapeHtml(title)}</h3>
-        </article>
-      `;
-    }).join("");
+      if (img) {
+        img.alt = title;
+        img.onerror = () => card.classList.add("photo-error");
+
+        // Only update src if it actually changed, to avoid triggering
+        // a fresh network request for an unchanged image.
+        if (img.getAttribute("src") !== imgSrc) {
+          img.src = imgSrc;
+        }
+      }
+
+      if (heading) heading.textContent = title;
+    });
 
     attachPhotoEvents();
     photoPair.classList.add("is-visible");

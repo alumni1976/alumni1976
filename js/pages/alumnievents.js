@@ -12,10 +12,6 @@ function escapeHtml(text = "") {
     .replaceAll("'", "&#039;");
 }
 
-function escapeHtmlMultiline(text = "") {
-  return escapeHtml(text).replaceAll("\n", "<br>");
-}
-
 function formatGreekDate(dateValue) {
   if (!dateValue) return "";
 
@@ -100,8 +96,12 @@ export async function afterRender() {
     if (!events.length) {
       eventsList.innerHTML = `
         <article class="event-card">
-          <h3>Δεν υπάρχουν ενεργές εκδηλώσεις.</h3>
-          <p>Οι επόμενες εκδηλώσεις θα ανακοινωθούν σύντομα.</p>
+          <h3>Δεν υπάρχουν προσεχείς εκδηλώσεις αυτή τη στιγμή.</h3>
+          <p>
+            Το Reunion 50 Ετών πραγματοποιήθηκε με μεγάλη επιτυχία στις
+            20 Ιουνίου 2026. Δείτε το αναμνηστικό άρθρο στην
+            <a href="#/home">αρχική σελίδα</a>.
+          </p>
         </article>
       `;
       return;
@@ -126,7 +126,7 @@ export async function afterRender() {
 
             <h3>${escapeHtml(event.title)}</h3>
 
-            ${event.location ? `<p class="event-location">📍 ${escapeHtmlMultiline(event.location)}</p>` : ""}
+            ${event.location ? `<p class="event-location">📍 ${escapeHtml(event.location)}</p>` : ""}
 
             <p class="event-description">${escapeHtml(event.description || "")}</p>
 

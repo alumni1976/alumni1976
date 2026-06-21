@@ -609,6 +609,40 @@ section p {
   color: var(--muted2);
 }
 
+/* ── EVENT RECAP ── */
+.recap-card {
+  max-width: 860px;
+}
+
+.recap-card h3 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--gold-light);
+  margin: 2rem 0 1rem;
+}
+
+.recap-card p {
+  margin-bottom: 1.2rem;
+}
+
+.recap-card .quote {
+  margin: 1.8rem 0;
+}
+
+.recap-card .quote cite {
+  font-style: italic;
+}
+
+.recap-thanks {
+  margin-top: 1.8rem;
+  padding-top: 1.6rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  color: var(--parchment);
+  text-align: center;
+}
+
 /* ── FOOTER ── */
 .site-footer,
 footer {
@@ -2320,9 +2354,4 @@ body.style-executive-alumni .theme-control select {
     max-width: 380px;
     margin: 0 auto;
   }
-}
-
-/* Preserve line breaks typed by members in any database-driven text content */
-p {
-  white-space: pre-wrap;
 }

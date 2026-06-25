@@ -64,8 +64,6 @@ class SupabaseMenuRepository {
     }
   }
 
-  // MENU ITEMS
-
   async fetchMenuData(tableName) {
 
     return this.fetchData(
@@ -76,8 +74,6 @@ class SupabaseMenuRepository {
     );
 
   }
-
-  // MEMBERS
 
   async fetchMembers() {
 
@@ -90,3 +86,6 @@ class SupabaseMenuRepository {
   }
 
 }
+
+/* IMPORTANT */
+window.SupabaseMenuRepository = SupabaseMenuRepository;

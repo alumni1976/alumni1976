@@ -244,7 +244,7 @@ export async function render() {
           </p>
 
           <div class="person">Δημήτρης Κολέτσος</div>
-          <div class="dates">1954 – 2025</div>
+          <div class="dates">1953 – 2025</div>
           <span class="rip">✦ Αιωνία του η μνήμη</span>
         </div>
       </section>

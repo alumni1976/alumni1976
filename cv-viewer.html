@@ -36,7 +36,6 @@
             padding: 40px;
         }
 
-        /* When there is no media, left column is hidden and right takes full width */
         .left-column.hidden {
             display: none;
         }
@@ -65,11 +64,28 @@
             border: none;
         }
 
+        .video-container .video-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.2rem;
+            background: #2a2a3a;
+            text-align: center;
+            padding: 20px;
+        }
+
         /* RIGHT COLUMN — CV */
         .right-column {
             width: 50%;
             background-color: #ffffff;
             border-left: 1px solid #e1e8ed;
+            position: relative;
         }
 
         .doc-iframe {
@@ -79,7 +95,7 @@
             background: transparent;
         }
 
-        /* Loading / error message shown inside the CV column */
+        /* Loading / error message inside CV column */
         .cv-message {
             display: flex;
             flex-direction: column;
@@ -95,6 +111,7 @@
         .cv-message p {
             font-size: 0.95rem;
             line-height: 1.6;
+            max-width: 500px;
         }
 
         .cv-message a {
@@ -106,10 +123,39 @@
             text-decoration: none;
             font-size: 0.9rem;
             font-weight: 600;
+            transition: background-color 0.2s;
         }
 
         .cv-message a:hover {
             background-color: #B8944A;
+        }
+
+        .cv-message .error-icon {
+            font-size: 3rem;
+        }
+
+        /* Loading spinner for CV */
+        .cv-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 16px;
+            color: #888;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e0e0e0;
+            border-top-color: #1F3A5F;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         /* TABLET / MOBILE */
@@ -118,20 +164,39 @@
                 flex-direction: column;
                 overflow: auto;
                 height: auto;
+                min-height: 100vh;
             }
 
             .column {
                 width: 100% !important;
                 height: 50vh;
+                min-height: 300px;
             }
 
             .left-column {
                 padding: 20px;
             }
 
-            /* In CV-only mode on mobile, give full viewport height */
             .left-column.hidden + .right-column {
                 height: 100vh;
+                min-height: 100vh;
+            }
+
+            .video-container {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .left-column {
+                padding: 12px;
+            }
+            .cv-message {
+                padding: 20px;
+            }
+            .cv-message a {
+                padding: 8px 16px;
+                font-size: 0.8rem;
             }
         }
     </style>
@@ -141,97 +206,222 @@
 
     <!-- LEFT: VIDEO / MEDIA -->
     <div class="column left-column" id="leftColumn">
-        <div class="video-container">
+        <div class="video-container" id="videoContainer">
+            <div class="video-placeholder" id="videoPlaceholder">
+                <span>Φόρτωση βίντεο...</span>
+            </div>
             <iframe
                 id="videoFrame"
                 allow="autoplay; fullscreen"
-                allowfullscreen>
+                allowfullscreen
+                style="display:none;">
             </iframe>
         </div>
     </div>
 
     <!-- RIGHT: CV -->
     <div class="column right-column" id="rightColumn">
+        <div class="cv-loading" id="cvLoading">
+            <div class="spinner"></div>
+            <span>Φόρτωση CV...</span>
+        </div>
         <iframe
             id="cvFrame"
-            class="doc-iframe">
+            class="doc-iframe"
+            style="display:none;">
         </iframe>
     </div>
 
 <script>
-    const params    = new URLSearchParams(window.location.search);
-    const mediaLink = params.get("media_link");
-    const cvLink    = params.get("cv");
+(function() {
+    'use strict';
 
-    // Convert any Google Drive share/view URL to its /preview embed URL
-    function toDrivePreview(url) {
-        if (!url) return "";
-        // Extract the file ID — the longest dash-and-word segment (≥25 chars)
-        const match = url.match(/[-\w]{25,}/);
-        if (!match) return url;
-        return `https://drive.google.com/file/d/${match[0]}/preview`;
+    // ─── Config ──────────────────────────────────────────────────────────
+
+    const GOOGLE_DRIVE_REGEX = /[-\w]{25,}/;
+
+    // ─── DOM refs ──────────────────────────────────────────────────────
+
+    const leftColumn = document.getElementById('leftColumn');
+    const rightColumn = document.getElementById('rightColumn');
+    const videoContainer = document.getElementById('videoContainer');
+    const videoPlaceholder = document.getElementById('videoPlaceholder');
+    const videoFrame = document.getElementById('videoFrame');
+    const cvFrame = document.getElementById('cvFrame');
+    const cvLoading = document.getElementById('cvLoading');
+
+    // ─── URL Helpers ───────────────────────────────────────────────────
+
+    function extractDriveId(url) {
+        if (!url) return null;
+        const match = url.match(GOOGLE_DRIVE_REGEX);
+        return match ? match[0] : null;
     }
 
-    // Return a URL that can be loaded inside an <iframe> on any platform,
-    // including Android browsers that cannot render raw PDFs/DOCXs.
-    function resolveViewerUrl(url) {
-        if (!url) return "";
+    function toDrivePreview(url) {
+        if (!url) return '';
+        const id = extractDriveId(url);
+        if (!id) return url;
+        return `https://drive.google.com/file/d/${id}/preview`;
+    }
 
-        // Google Drive files — use native Drive preview (no third-party needed)
-        if (url.includes("drive.google.com")) {
+    function resolveViewerUrl(url) {
+        if (!url) return '';
+
+        // Google Drive — use native preview
+        if (url.includes('drive.google.com')) {
             return toDrivePreview(url);
         }
 
-        // Cloudinary or any other public URL — wrap in Google Docs Viewer,
-        // which handles both PDF and DOCX on all platforms including Android.
+        // Cloudinary or other public URLs — use Google Docs Viewer
+        // Handles PDF, DOCX, PPTX on all platforms including Android
         return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
     }
 
-    // ── MEDIA (left column) ──────────────────────────────────────────────────
-    if (mediaLink) {
-        document.getElementById("videoFrame").src = toDrivePreview(mediaLink);
-    } else {
-        // No media supplied — hide left column, give full width to CV
-        document.getElementById("leftColumn").classList.add("hidden");
-        document.getElementById("rightColumn").classList.add("full-width");
+    function isDriveVideo(url) {
+        if (!url) return false;
+        const id = extractDriveId(url);
+        if (!id) return false;
+        // Drive video preview works for most video files
+        return true;
     }
 
-    // ── CV (right column) ────────────────────────────────────────────────────
-    if (cvLink) {
-        const viewerUrl = resolveViewerUrl(cvLink);
-        const cvFrame   = document.getElementById("cvFrame");
+    // ─── Media (left column) ──────────────────────────────────────────
 
+    function loadMedia(mediaLink) {
+        if (!mediaLink) {
+            // No media — hide left column, give full width to CV
+            leftColumn.classList.add('hidden');
+            rightColumn.classList.add('full-width');
+            return;
+        }
+
+        // Show video frame, hide placeholder
+        videoPlaceholder.style.display = 'none';
+        videoFrame.style.display = 'block';
+
+        const previewUrl = toDrivePreview(mediaLink);
+        videoFrame.src = previewUrl;
+
+        // Handle load errors
+        videoFrame.addEventListener('error', function() {
+            videoPlaceholder.style.display = 'flex';
+            videoPlaceholder.innerHTML = `
+                <span>⚠️ Δεν ήταν δυνατή η φόρτωση του βίντεο.</span>
+                <a href="${mediaLink}" target="_blank" rel="noopener" style="color:#B8944A;margin-top:8px;">
+                    Άνοιγμα στο Google Drive
+                </a>
+            `;
+            videoFrame.style.display = 'none';
+        });
+    }
+
+    // ─── CV (right column) ────────────────────────────────────────────
+
+    function loadCV(cvLink) {
+        if (!cvLink) {
+            showFallback('Δεν βρέθηκε αρχείο CV.');
+            return;
+        }
+
+        const viewerUrl = resolveViewerUrl(cvLink);
+
+        // Show iframe, hide loading
+        cvLoading.style.display = 'none';
+        cvFrame.style.display = 'block';
         cvFrame.src = viewerUrl;
 
-        // Google Docs Viewer occasionally shows a "Preview not available" page.
-        // If that happens after load, replace the iframe with a fallback message
-        // and a direct download link so the user is never left with a blank panel.
-        cvFrame.addEventListener("load", function () {
+        // If Google Docs Viewer fails, fallback to direct download
+        let loadTimeout = setTimeout(function() {
+            // If after 15 seconds the iframe hasn't loaded, show fallback
+            if (cvFrame.style.display !== 'none') {
+                showFallback(
+                    'Το αρχείο δεν μπόρεσε να φορτωθεί στον browser.',
+                    cvLink
+                );
+            }
+        }, 15000);
+
+        cvFrame.addEventListener('load', function() {
+            clearTimeout(loadTimeout);
+            // Cross-origin check — if we can access contentDocument, it's same-origin
             try {
-                // If we can read the iframe's title it means same-origin; skip.
-                // For cross-origin (normal case) this throws — that is fine.
-                const title = cvFrame.contentDocument?.title || "";
-                if (title.toLowerCase().includes("error") ||
-                    title.toLowerCase().includes("not available")) {
-                    showFallback();
+                const doc = cvFrame.contentDocument;
+                if (doc) {
+                    const title = doc.title || '';
+                    if (title.toLowerCase().includes('error') ||
+                        title.toLowerCase().includes('not available')) {
+                        showFallback(
+                            'Το αρχείο δεν είναι διαθέσιμο για προβολή.',
+                            cvLink
+                        );
+                    }
                 }
             } catch (_) {
-                // Cross-origin — can't inspect; assume it loaded correctly.
+                // Cross-origin — can't inspect; assume it loaded correctly
+                // This is the normal case for Google Docs Viewer
             }
         });
-    } else {
-        showFallback("Δεν βρέθηκε αρχείο CV.");
+
+        cvFrame.addEventListener('error', function() {
+            clearTimeout(loadTimeout);
+            showFallback(
+                'Σφάλμα κατά τη φόρτωση του αρχείου.',
+                cvLink
+            );
+        });
     }
 
-    function showFallback(msg) {
-        const rightCol = document.getElementById("rightColumn");
-        rightCol.innerHTML = `
-            <div class="cv-message">
-                <p>${msg || "Δεν ήταν δυνατή η προβολή του αρχείου στον browser."}</p>
-                ${cvLink ? `<a href="${cvLink}" target="_blank" rel="noopener">Άνοιγμα / Λήψη αρχείου</a>` : ""}
-            </div>
+    function showFallback(msg, downloadUrl) {
+        // Hide iframe and loading
+        cvFrame.style.display = 'none';
+        cvLoading.style.display = 'none';
+
+        const rightCol = document.getElementById('rightColumn');
+
+        // Remove any existing message
+        const existingMsg = rightCol.querySelector('.cv-message');
+        if (existingMsg) existingMsg.remove();
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'cv-message';
+        messageDiv.innerHTML = `
+            <div class="error-icon">📄</div>
+            <p>${msg || 'Δεν ήταν δυνατή η προβολή του αρχείου στον browser.'}</p>
+            ${downloadUrl ? `<a href="${downloadUrl}" target="_blank" rel="noopener">📥 Λήψη αρχείου</a>` : ''}
+            <p style="font-size:0.8rem;color:#999;margin-top:4px;">
+                Το αρχείο μπορεί να ανοιχτεί με το πρόγραμμα προβολής της συσκευής σας.
+            </p>
         `;
+        rightCol.appendChild(messageDiv);
     }
+
+    // ─── Initialize ────────────────────────────────────────────────────
+
+    const params = new URLSearchParams(window.location.search);
+    const mediaLink = params.get('media_link');
+    const cvLink = params.get('cv');
+
+    loadMedia(mediaLink);
+    loadCV(cvLink);
+
+    // ─── Handle resize for mobile layout ─────────────────────────────
+
+    function handleResize() {
+        // On mobile, ensure columns stack properly
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+            // Allow natural flow
+            document.body.style.overflow = 'auto';
+        } else {
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+})();
 </script>
 
 </body>

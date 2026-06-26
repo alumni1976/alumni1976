@@ -41,7 +41,7 @@ export async function render() {
           <a href="#/reunionattendees" class="rd-nav-card">
             <div class="rd-nav-icon">👥</div>
             <h3>Συμμετέχοντες</h3>
-            <p>Οι 29 συνάδελφοι που ήταν εκεί</p>
+            <p>Οι 30 συνάδελφοι που ήταν εκεί</p>
             <span class="rd-nav-arrow">→</span>
           </a>
         </div>

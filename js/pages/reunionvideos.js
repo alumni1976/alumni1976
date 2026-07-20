@@ -1,31 +1,46 @@
-const DATA_URL = './assets/data/videos.json';
+import { getReunionData } from "../api/reunionApi.js";
+
+import { getText, formatText } from "../services/textService.js";
 
 function escHtml(s) {
-  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
+
 function initials(first, last) {
-  return [(first||'')[0],(last||'')[0]].filter(Boolean).map(c=>c.toUpperCase()).join('');
+  return [(first || "")[0], (last || "")[0]]
+    .filter(Boolean)
+    .map(c => c.toUpperCase())
+    .join("");
 }
+
 function isDirectVideo(url) {
-  return /\.(mp4|webm|ogg)(\?|$)/i.test(url || '');
+  return /\.(mp4|webm|ogg)(\?|$)/i.test(url || "");
 }
-function cloudinaryPoster(videoUrl) {
-  // Only YouTube/Vimeo have reliable posters; Cloudinary .webm does not
+
+function videoPoster(videoUrl) {
   if (!videoUrl) return null;
+
   const ytMatch = videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([A-Za-z0-9_-]{11})/);
   if (ytMatch) return `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+
   const vmMatch = videoUrl.match(/vimeo\.com\/(\d+)/);
   if (vmMatch) return `https://vumbnail.com/${vmMatch[1]}.jpg`;
-  return null; // Cloudinary .webm — no reliable poster
+
+  return null;
 }
 
 export async function render() {
-  return `
+  return getText("reunionvideos.renderHtml", `
     <div class="profs-header photos-header">
       <div class="profs-eyebrow">REUNION 2026</div>
       <h1>Βίντεο <em>Ομιλητών</em></h1>
       <p>Βίντεο-χαιρετισμοί των συναδέλφων από τη συνάντηση της 20ης Ιουνίου 2026.</p>
     </div>
+
     <main class="photos-main">
       <section class="photos-section">
         <div class="photos-section-head">
@@ -35,67 +50,83 @@ export async function render() {
           </div>
           <div class="photos-count" id="rvCount"></div>
         </div>
+
         <div id="rvMessage" class="photos-message">Φόρτωση βίντεο...</div>
+
         <div id="rvGrid" class="rv-grid hidden"></div>
       </section>
     </main>
 
     <div id="rvModal" class="photo-lightbox hidden" aria-hidden="true">
       <button id="rvModalClose" class="photo-lightbox-close" aria-label="Κλείσιμο">×</button>
+
       <div class="photo-lightbox-inner rv-modal-inner">
         <div id="rvModalEmbed" class="rv-embed-wrap"></div>
+
         <div class="photo-lightbox-text">
           <h3 id="rvModalTitle"></h3>
         </div>
       </div>
     </div>
-  `;
+  `);
 }
 
 export async function afterRender() {
-  const message = document.getElementById('rvMessage');
-  const countEl = document.getElementById('rvCount');
-  const grid    = document.getElementById('rvGrid');
+  const message = document.getElementById("rvMessage");
+  const countEl = document.getElementById("rvCount");
+  const grid = document.getElementById("rvGrid");
+
+  if (!message || !grid) return;
 
   try {
-    const res    = await fetch(DATA_URL);
-    const videos = await res.json();
+    const data = await getReunionData();
+
+    const videos = data.filter(v =>
+      (v.videoUrl || "").trim() !== ""
+    );
 
     if (!videos.length) {
-      message.textContent = 'Δεν υπάρχουν ακόμη βίντεο.';
+      message.textContent = getText("reunionvideos.noVideos", "Δεν υπάρχουν ακόμη βίντεο.");
+      if (countEl) countEl.textContent = "";
       return;
     }
 
-    message.textContent = '';
-    grid.classList.remove('hidden');
-    if (countEl) countEl.textContent = `${videos.length} βίντεο`;
+    message.textContent = "";
+    grid.classList.remove("hidden");
 
-    grid.innerHTML = videos.map((v) => {
-      const name   = `${v.first_name || ''} ${v.last_name || ''}`.trim();
-      const url    = v.cloud_url || '';
-      const photo  = v.photo_link_cloud || '';
-      const poster = cloudinaryPoster(url);
+    if (countEl) {
+      countEl.textContent = formatText("reunionvideos.count", { count: videos.length }, `${videos.length} βίντεο`);
+    }
 
-      // Avatar: member photo > video poster frame > initials
+    grid.innerHTML = videos.map(v => {
+      const name = `${v.firstName || ""} ${v.lastName || ""}`.trim();
+      const url = v.videoUrl || "";
+      const photo = v.photoLink || "";
+      const poster = videoPoster(url);
+
       let thumbHtml;
+
       if (photo) {
         thumbHtml = `
           <div class="rv-thumb rv-thumb-member">
             <img src="${escHtml(photo)}" alt="${escHtml(name)}" class="rv-member-photo" loading="lazy">
             <div class="rv-play-overlay">▶</div>
-          </div>`;
+          </div>
+        `;
       } else if (poster) {
         thumbHtml = `
           <div class="rv-thumb">
             <img src="${escHtml(poster)}" alt="${escHtml(name)}" loading="lazy" onerror="this.style.display='none'">
             <div class="rv-play-overlay">▶</div>
-          </div>`;
+          </div>
+        `;
       } else {
         thumbHtml = `
           <div class="rv-thumb rv-thumb-initials">
-            <div class="rv-initials">${initials(v.first_name, v.last_name)}</div>
+            <div class="rv-initials">${escHtml(initials(v.firstName, v.lastName))}</div>
             <div class="rv-play-overlay">▶</div>
-          </div>`;
+          </div>
+        `;
       }
 
       return `
@@ -103,53 +134,77 @@ export async function afterRender() {
           data-url="${escHtml(url)}"
           data-name="${escHtml(name)}">
           ${thumbHtml}
+
           <div class="rv-card-body">
             <h3>${escHtml(name)}</h3>
-            <p>Απόφοιτος Ηλεκτρολόγων Μηχανικών 1976</p>
+            <p>${getText("reunionvideos.role", "Απόφοιτος Ηλεκτρολόγων Μηχανικών 1976")}</p>
           </div>
-        </article>`;
-    }).join('');
+        </article>
+      `;
+    }).join("");
 
     attachVideoEvents();
 
   } catch (err) {
-    console.error(err);
-    message.textContent = 'Αποτυχία φόρτωσης βίντεο.';
+    console.error("Error loading reunion videos:", err);
+    message.textContent = getText("reunionvideos.loadError", "Αποτυχία φόρτωσης βίντεο.");
   }
 }
 
 function attachVideoEvents() {
-  const modal    = document.getElementById('rvModal');
-  const embedWrap= document.getElementById('rvModalEmbed');
-  const titleEl  = document.getElementById('rvModalTitle');
-  const closeBtn = document.getElementById('rvModalClose');
+  const modal = document.getElementById("rvModal");
+  const embedWrap = document.getElementById("rvModalEmbed");
+  const titleEl = document.getElementById("rvModalTitle");
+  const closeBtn = document.getElementById("rvModalClose");
 
-  document.querySelectorAll('.rv-card').forEach(card => {
+  if (!modal || !embedWrap || !titleEl) return;
+
+  document.querySelectorAll(".rv-card").forEach(card => {
     card.onclick = () => {
-      const url  = card.dataset.url;
-      const name = card.dataset.name;
+      const url = card.dataset.url || "";
+      const name = card.dataset.name || "";
+
       titleEl.textContent = name;
 
       if (isDirectVideo(url)) {
-        embedWrap.innerHTML = `<video class="rv-video-player" controls autoplay src="${escHtml(url)}"></video>`;
+        embedWrap.innerHTML = `
+          <video class="rv-video-player" controls autoplay src="${escHtml(url)}"></video>
+        `;
       } else {
-        embedWrap.innerHTML = `<iframe class="rv-iframe" src="${escHtml(url)}" frameborder="0" allowfullscreen allow="autoplay; encrypted-media"></iframe>`;
+        embedWrap.innerHTML = `
+          <iframe class="rv-iframe"
+            src="${escHtml(url)}"
+            frameborder="0"
+            allowfullscreen
+            allow="autoplay; encrypted-media">
+          </iframe>
+        `;
       }
 
-      modal.classList.remove('hidden');
-      modal.setAttribute('aria-hidden','false');
-      document.body.classList.add('lightbox-open');
+      modal.classList.remove("hidden");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("lightbox-open");
     };
   });
 
   const closeModal = () => {
-    modal.classList.add('hidden');
-    modal.setAttribute('aria-hidden','true');
-    embedWrap.innerHTML = '';
-    document.body.classList.remove('lightbox-open');
+    modal.classList.add("hidden");
+    modal.setAttribute("aria-hidden", "true");
+    embedWrap.innerHTML = "";
+    document.body.classList.remove("lightbox-open");
   };
 
-  if (closeBtn) closeBtn.onclick = closeModal;
-  if (modal)    modal.onclick = e => { if (e.target === modal) closeModal(); };
-  document.onkeydown = e => { if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal(); };
+  if (closeBtn) {
+    closeBtn.onclick = closeModal;
+  }
+
+  modal.onclick = e => {
+    if (e.target === modal) closeModal();
+  };
+
+  document.onkeydown = e => {
+    if (e.key === "Escape" && !modal.classList.contains("hidden")) {
+      closeModal();
+    }
+  };
 }

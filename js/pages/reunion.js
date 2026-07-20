@@ -1,14 +1,56 @@
-async function loadJson(url) {
-  try { const r = await fetch(url); return await r.json(); } catch { return []; }
+import { getReunionData } from "../api/reunionApi.js";
+import { API_BASE } from "../api/apiConfig.js";
+
+import { getText } from "../services/textService.js";
+
+function isTrue(value) {
+  return value === true ||
+    value === 1 ||
+    value === "1" ||
+    value === "true";
+}
+
+async function getReunionPhotos() {
+  const response = await fetch(`${API_BASE}/api/reunionphotos`, {
+    headers: {
+      Accept: "application/json"
+    },
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      getText("reunion.photoHttpError", "Αποτυχία φόρτωσης φωτογραφιών: HTTP {status}").replace("{status}", String(response.status))
+    );
+  }
+
+  const result = await response.json();
+
+  if (result.error) {
+    throw new Error(result.error);
+  }
+
+  if (!Array.isArray(result.data)) {
+    throw new Error(
+      getText("reunion.invalidPhotoData", "Η απάντηση του API φωτογραφιών δεν περιέχει πίνακα data.")
+    );
+  }
+
+  return result.data.filter(photo =>
+    photo &&
+    photo.show !== false &&
+    String(photo.cloudUrl || "").trim() !== ""
+  );
 }
 
 export async function render() {
-  return `
+  return getText("reunion.renderHtml", `
     <div class="profs-header photos-header">
       <div class="profs-eyebrow">50 ΧΡΟΝΙΑ ΜΕΤΑ</div>
       <h1>Reunion <em>1976</em></h1>
       <p>20 Ιουνίου 2026 · Πρυτανεία Πανεπιστημίου Πατρών, Ρίο</p>
     </div>
+
     <main class="photos-main">
       <section class="photos-section">
 
@@ -20,66 +62,140 @@ export async function render() {
         </div>
 
         <div class="rd-nav-grid">
+
           <a href="#/reuniongreetings" class="rd-nav-card">
             <div class="rd-nav-icon">💬</div>
             <h3>Εντυπώσεις Πρωταγωνιστών</h3>
-            <p>Τα μηνύματα και συναισθήματα των συναδέλφων μετά τη συνάντηση</p>
+            <p>
+              Τα μηνύματα και συναισθήματα των συναδέλφων
+              μετά τη συνάντηση
+            </p>
             <span class="rd-nav-arrow">→</span>
           </a>
+
           <a href="#/reunionvideos" class="rd-nav-card">
             <div class="rd-nav-icon">🎥</div>
             <h3>Βίντεο Ομιλητών</h3>
-            <p>Βίντεο-χαιρετισμοί των συναδέλφων από την εκδήλωση</p>
+            <p>
+              Βίντεο-χαιρετισμοί των συναδέλφων από την εκδήλωση
+            </p>
             <span class="rd-nav-arrow">→</span>
           </a>
+
           <a href="#/reunionphotos" class="rd-nav-card">
             <div class="rd-nav-icon">📸</div>
             <h3>Φωτογραφικό Υλικό</h3>
-            <p>Στιγμές και αναμνήσεις από τη συνάντηση</p>
+            <p>
+              Στιγμές και αναμνήσεις από τη συνάντηση
+            </p>
             <span class="rd-nav-arrow">→</span>
           </a>
+
           <a href="#/reunionattendees" class="rd-nav-card">
             <div class="rd-nav-icon">👥</div>
             <h3>Συμμετέχοντες</h3>
-            <p>Οι 30 συνάδελφοι που ήταν εκεί</p>
+            <p>
+              Οι συνάδελφοι που ήταν εκεί
+            </p>
             <span class="rd-nav-arrow">→</span>
           </a>
+
         </div>
 
         <blockquote class="rd-quote">
-          <p>«Ήμασταν εκεί. Τα ζήσαμε μαζί. Και παραμένουμε μια οικογένεια.»</p>
-          <footer>— Alumni 1976, Ηλεκτρολόγοι Μηχανικοί Πανεπιστημίου Πατρών</footer>
+          <p>
+            «Ήμασταν εκεί. Τα ζήσαμε μαζί.
+            Και παραμένουμε μια οικογένεια.»
+          </p>
+          <footer>
+            — Alumni 1976, Ηλεκτρολόγοι Μηχανικοί
+            Πανεπιστημίου Πατρών
+          </footer>
         </blockquote>
 
       </section>
     </main>
-  `;
+  `);
 }
 
 export async function afterRender() {
-  const statsGrid = document.getElementById('rdStats');
-  if (!statsGrid) return;
+  const statsGrid = document.getElementById("rdStats");
 
-  const [greetings, videos, photos, attendees] = await Promise.all([
-    loadJson('./assets/data/greetings.json'),
-    loadJson('./assets/data/videos.json'),
-    loadJson('./assets/data/photos.json'),
-    loadJson('./assets/data/attendees.json')
-  ]);
+  if (!statsGrid) {
+    return;
+  }
 
-  const presentCount = attendees.filter(a => a.attended === true).length;
+  try {
+    const [reunionData, photos] = await Promise.all([
+      getReunionData(),
+      getReunionPhotos()
+    ]);
 
-  const stats = [
-    { icon: '💬', label: 'Εντυπώσεις', value: greetings.length, href: '#/reuniongreetings' },
-    { icon: '🎥', label: 'Βίντεο',      value: videos.length,    href: '#/reunionvideos'    },
-    { icon: '📸', label: 'Φωτογραφίες', value: photos.length,    href: '#/reunionphotos'    },
-    { icon: '👥', label: 'Παρόντες',    value: presentCount,     href: '#/reunionattendees' }
-  ];
+    const safeReunionData = Array.isArray(reunionData)
+      ? reunionData
+      : [];
 
-  statsGrid.innerHTML = stats.map(s => `
-    <a href="${s.href}" class="rd-stat-card">
-      <span class="rd-stat-icon">${s.icon}</span>
-      <span class="rd-stat-value">${s.value}</span>
-      <span class="rd-stat-label">${s.label}</span>
-    </a>`).join('');
+    const greetings = safeReunionData.filter(item =>
+      String(item.greeting || "").trim() !== ""
+    );
+
+    const videos = safeReunionData.filter(item =>
+      String(item.cloudUrl || item.videoUrl || "").trim() !== ""
+    );
+
+    const attendees = safeReunionData.filter(item =>
+      isTrue(item.attended)
+    );
+
+    const stats = [
+      {
+        icon: "💬",
+        label: getText("reunion.statsGreetings", "Εντυπώσεις"),
+        value: greetings.length,
+        href: "#/reuniongreetings"
+      },
+      {
+        icon: "🎥",
+        label: getText("reunion.statsVideos", "Βίντεο"),
+        value: videos.length,
+        href: "#/reunionvideos"
+      },
+      {
+        icon: "📸",
+        label: getText("reunion.statsPhotos", "Φωτογραφίες"),
+        value: photos.length,
+        href: "#/reunionphotos"
+      },
+      {
+        icon: "👥",
+        label: getText("reunion.statsAttendees", "Παρόντες"),
+        value: attendees.length,
+        href: "#/reunionattendees"
+      }
+    ];
+
+    statsGrid.innerHTML = stats.map(stat => `
+      <a href="${stat.href}" class="rd-stat-card">
+        <span class="rd-stat-icon">${stat.icon}</span>
+        <span class="rd-stat-value">${stat.value}</span>
+        <span class="rd-stat-label">${stat.label}</span>
+      </a>
+    `).join("");
+
+  } catch (error) {
+    console.error(
+      "Error loading reunion statistics:",
+      error
+    );
+
+    statsGrid.innerHTML = `
+      <div class="rd-stat-card">
+        <span class="rd-stat-icon">⚠️</span>
+        <span class="rd-stat-value">!</span>
+        <span class="rd-stat-label">
+          ${getText("reunion.statsLoadError", "Σφάλμα φόρτωσης")}
+        </span>
+      </div>
+    `;
+  }
 }

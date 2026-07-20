@@ -1,7 +1,8 @@
-const SUPABASE_URL = "https://hpnrlshfxxcyujrxegka.supabase.co";
-
-const SUPABASE_KEY =
-  document.getElementById("supabase-db")?.dataset?.apikey;
+import { getAlumniPhotos } from "../api/alumniPhotosApi.js";
+import {
+  getText,
+  formatText
+} from "../services/textService.js";
 
 const PHOTOS_PER_VIEW = 2;
 const SLIDE_INTERVAL_MS = 5000;
@@ -24,44 +25,39 @@ function escapeHtml(text = "") {
 }
 
 function photoTitle(photo) {
-  return String(photo.title || "Φωτογραφία Alumni 1976").trim() || "Φωτογραφία Alumni 1976";
+  const fallbackTitle = getText(
+    "alumniphotos.photoFallbackTitle",
+    "Φωτογραφία Alumni 1976"
+  );
+
+  return String(
+    photo.title ||
+    photo.caption ||
+    fallbackTitle
+  ).trim() || fallbackTitle;
 }
 
 function photoUrl(photo) {
-  return String(photo.url_cloud || "").trim();
-}
-
-async function fetchAlumniPhotos() {
-  const response = await fetch(
-    `${SUPABASE_URL}/rest/v1/alumniphotos?select=id,title,url_cloud&order=id.asc`,
-    {
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-        "Content-Type": "application/json"
-      }
-    }
-  );
-
-  const data = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw data || new Error("Failed to load alumni photos");
-  }
-
-  return (data || []).filter(photo => photoUrl(photo));
+  return String(photo.urlCloud || "").trim();
 }
 
 export async function render() {
   return `
     <div class="profs-header photos-header">
-      <div class="profs-eyebrow">PHOTO ARCHIVE</div>
+      <div class="profs-eyebrow">
+        ${getText("alumniphotos.eyebrow", "PHOTO ARCHIVE")}
+      </div>
 
-      <h1>Φωτογραφικό <em>Αρχείο</em></h1>
+      <h1>
+        ${getText("alumniphotos.pageTitleStart", "Φωτογραφικό")}
+        <em>${getText("alumniphotos.pageTitleEmphasis", "Αρχείο")}</em>
+      </h1>
 
       <p>
-        Στιγμές, πρόσωπα και αναμνήσεις από την κοινή πορεία των
-        αποφοίτων Ηλεκτρολόγων Μηχανικών του 1976.
+        ${getText(
+          "alumniphotos.pageDescription",
+          "Στιγμές, πρόσωπα και αναμνήσεις από την κοινή πορεία των αποφοίτων Ηλεκτρολόγων Μηχανικών του 1976."
+        )}
       </p>
     </div>
 
@@ -69,22 +65,43 @@ export async function render() {
       <section class="photos-section">
         <div class="photos-section-head">
           <div>
-            <p class="section-tag">ΑΝΑΜΝΗΣΕΙΣ</p>
-            <h2>Δύο στιγμές κάθε φορά</h2>
+            <p class="section-tag">
+              ${getText("alumniphotos.sectionTag", "ΑΝΑΜΝΗΣΕΙΣ")}
+            </p>
+
+            <h2>
+              ${getText(
+                "alumniphotos.sectionTitle",
+                "Δύο στιγμές κάθε φορά"
+              )}
+            </h2>
           </div>
 
           <div class="photos-count" id="photosCount"></div>
         </div>
 
         <div id="photosMessage" class="photos-message">
-          Φόρτωση φωτογραφιών...
+          ${getText(
+            "alumniphotos.loading",
+            "Φόρτωση φωτογραφιών..."
+          )}
         </div>
 
         <div id="photoCarousel" class="photo-carousel hidden">
           <div id="photoPair" class="photo-pair"></div>
 
           <div id="photoSpeedControl" class="photo-speed-control">
-            <label for="photoSpeedRange">Ταχύτητα εναλλαγής φωτογαφιών: <span id="photoSpeedValue">5</span>&nbsp;δευτερόλεπτα</label>
+            <label for="photoSpeedRange">
+              ${getText(
+                "alumniphotos.speedLabel",
+                "Ταχύτητα εναλλαγής φωτογραφιών:"
+              )}
+              <span id="photoSpeedValue">5</span>&nbsp;${getText(
+                "alumniphotos.seconds",
+                "δευτερόλεπτα"
+              )}
+            </label>
+
             <input
               type="range"
               id="photoSpeedRange"
@@ -99,11 +116,17 @@ export async function render() {
 
           <div class="photo-carousel-toolbar">
             <button id="photoPrev" class="photo-carousel-btn" type="button">
-              ← Προηγούμενες
+              ${getText(
+                "alumniphotos.previousButton",
+                "← Προηγούμενες"
+              )}
             </button>
 
             <button id="photoNext" class="photo-carousel-btn" type="button">
-              Επόμενες →
+              ${getText(
+                "alumniphotos.nextButton",
+                "Επόμενες →"
+              )}
             </button>
           </div>
         </div>
@@ -111,7 +134,14 @@ export async function render() {
     </main>
 
     <div id="photoLightbox" class="photo-lightbox hidden" aria-hidden="true">
-      <button id="photoLightboxClose" class="photo-lightbox-close" aria-label="Close photo">
+      <button
+        id="photoLightboxClose"
+        class="photo-lightbox-close"
+        aria-label="${getText(
+          "alumniphotos.closePhotoAria",
+          "Κλείσιμο φωτογραφίας"
+        )}"
+      >
         ×
       </button>
 
@@ -131,19 +161,30 @@ export async function afterRender() {
   const count = document.getElementById("photosCount");
   const carousel = document.getElementById("photoCarousel");
 
+  if (!message || !carousel) return;
+
   stopSlideshow();
 
-  if (!SUPABASE_KEY) {
-    message.textContent = "Δεν βρέθηκε Supabase API key.";
-    return;
-  }
-
   try {
-    photos = await fetchAlumniPhotos();
+    const data = await getAlumniPhotos();
+
+    photos = data
+      .filter(photo => photoUrl(photo))
+      .sort((a, b) => Number(a.id || 0) - Number(b.id || 0));
 
     if (!photos.length) {
-      message.textContent = "Δεν υπάρχουν ακόμη φωτογραφίες.";
-      if (count) count.textContent = "0 φωτογραφίες";
+      message.textContent = getText(
+        "alumniphotos.noPhotos",
+        "Δεν υπάρχουν ακόμη φωτογραφίες."
+      );
+
+      if (count) {
+        count.textContent = `0 ${getText(
+          "alumniphotos.photoPlural",
+          "φωτογραφίες"
+        )}`;
+      }
+
       return;
     }
 
@@ -151,7 +192,11 @@ export async function afterRender() {
     carousel.classList.remove("hidden");
 
     if (count) {
-      count.textContent = `${photos.length} ${photos.length === 1 ? "φωτογραφία" : "φωτογραφίες"}`;
+      const photoWord = photos.length === 1
+        ? getText("alumniphotos.photoSingular", "φωτογραφία")
+        : getText("alumniphotos.photoPlural", "φωτογραφίες");
+
+      count.textContent = `${photos.length} ${photoWord}`;
     }
 
     currentPairIndex = 0;
@@ -161,8 +206,12 @@ export async function afterRender() {
     startSlideshow();
 
   } catch (err) {
-    console.error(err);
-    message.textContent = "Αποτυχία φόρτωσης φωτογραφιών.";
+    console.error("Error loading alumni photos:", err);
+
+    message.textContent = getText(
+      "alumniphotos.loadError",
+      "Αποτυχία φόρτωσης φωτογραφιών."
+    );
   }
 }
 
@@ -186,7 +235,6 @@ function renderPhotoPair(immediate = false) {
 
   if (!photoPair) return;
 
-  // First-time setup: create PHOTOS_PER_VIEW fixed slots once.
   if (!photoPair.dataset.initialized) {
     photoPair.innerHTML = Array.from({ length: PHOTOS_PER_VIEW }, () => `
       <article class="photo-slide-card">
@@ -244,8 +292,6 @@ function renderPhotoPair(immediate = false) {
         img.alt = title;
         img.onerror = () => card.classList.add("photo-error");
 
-        // Only update src if it actually changed, to avoid triggering
-        // a fresh network request for an unchanged image.
         if (img.getAttribute("src") !== imgSrc) {
           img.src = imgSrc;
         }
@@ -267,13 +313,18 @@ function renderPhotoPair(immediate = false) {
 
 function renderDots() {
   const dots = document.getElementById("photoDots");
+
   if (!dots) return;
 
   dots.innerHTML = Array.from({ length: totalPairs() }, (_, index) => `
     <button
       class="photo-dot ${index === currentPairIndex ? "active" : ""}"
       type="button"
-      aria-label="Go to photo group ${index + 1}"
+      aria-label="${formatText(
+        "alumniphotos.goToGroupAria",
+        { number: index + 1 },
+        `Μετάβαση στην ομάδα φωτογραφιών ${index + 1}`
+      )}"
       data-index="${index}"
     ></button>
   `).join("");
@@ -364,9 +415,14 @@ function attachCarouselEvents() {
     speedRange.oninput = () => {
       let seconds = Number(speedRange.value);
 
-      if (Number.isNaN(seconds)) seconds = SLIDE_INTERVAL_MS / 1000;
+      if (Number.isNaN(seconds)) {
+        seconds = SLIDE_INTERVAL_MS / 1000;
+      }
 
-      seconds = Math.min(Math.max(seconds, MIN_SLIDE_INTERVAL_SEC), MAX_SLIDE_INTERVAL_SEC);
+      seconds = Math.min(
+        Math.max(seconds, MIN_SLIDE_INTERVAL_SEC),
+        MAX_SLIDE_INTERVAL_SEC
+      );
 
       slideIntervalMs = seconds * 1000;
 
@@ -385,10 +441,14 @@ function attachPhotoEvents() {
   const lightboxTitle = document.getElementById("photoLightboxTitle");
   const closeBtn = document.getElementById("photoLightboxClose");
 
+  if (!lightbox || !lightboxImg || !lightboxTitle) return;
+
   document.querySelectorAll(".photo-slide-card").forEach(card => {
     card.onclick = () => {
       const full = card.dataset.full || "";
       const title = card.dataset.title || "";
+
+      if (!full) return;
 
       stopSlideshow();
 
@@ -414,16 +474,17 @@ function attachPhotoEvents() {
     closeBtn.onclick = closeLightbox;
   }
 
-  if (lightbox) {
-    lightbox.onclick = event => {
-      if (event.target === lightbox) {
-        closeLightbox();
-      }
-    };
-  }
+  lightbox.onclick = event => {
+    if (event.target === lightbox) {
+      closeLightbox();
+    }
+  };
 
   document.onkeydown = event => {
-    if (event.key === "Escape" && lightbox && !lightbox.classList.contains("hidden")) {
+    if (
+      event.key === "Escape" &&
+      !lightbox.classList.contains("hidden")
+    ) {
       closeLightbox();
     }
   };

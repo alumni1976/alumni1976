@@ -1,5 +1,6 @@
+import { getText } from "../services/textService.js";
 export async function render() {
-  return `
+  return getText("faq.renderHtml", `
     <section class="faq-page">
       <p class="section-tag">ALUMNI 1976</p>
       <h2>ΣΥΧΝΕΣ ΕΡΩΤΗΣΕΙΣ</h2>
@@ -80,8 +81,16 @@ export async function render() {
           <summary class="faq-question">7. Τα μηνύματα στη ΔΕΞΑΜΕΝΗ ΣΚΕΨΕΩΝ εμφανίζονται αμέσως;</summary>
           <div class="faq-answer">
             <p>
-              Όχι απαραίτητα. Οι αναρτήσεις και τα σχόλια ενδέχεται να χρειάζονται έγκριση
-              από τη διαχείριση πριν εμφανιστούν δημόσια στο site.
+              Κάθε νέα ανάρτηση και κάθε σχόλιο αξιολογείται αυτόματα με τη βοήθεια
+              Τεχνητής Νοημοσύνης (AI), ώστε να ελέγχεται αν το περιεχόμενο είναι σχετικό,
+              ευπρεπές και κατάλληλο για δημοσίευση.
+            </p>
+
+            <p>
+              Αν το περιεχόμενο εγκριθεί από το AI, δημοσιεύεται άμεσα. Σε διαφορετική
+              περίπτωση δεν δημοσιεύεται και ο χρήστης ενημερώνεται με σχετικό μήνυμα.
+              Η διαχείριση μπορεί επίσης να επανεξετάζει τις περιπτώσεις που χρειάζονται
+              πρόσθετο έλεγχο.
             </p>
           </div>
         </details>
@@ -144,6 +153,17 @@ export async function render() {
           </div>
         </details>
 
+        <details class="faq-item">
+          <summary class="faq-question">12. Σχετικά με το 50th Reunion</summary>
+          <div class="faq-answer">
+            <p>
+              Μέσω του συνδέσμου <a href="#/reunion"><strong>50th Reunion</strong></a> παρουσιάζεται υλικό
+              από τη συνάντηση των 50 χρόνων, με βίντεο, φωτογραφίες και δηλώσεις
+              των πρωταγωνιστών της εκδήλωσης.
+            </p>
+          </div>
+        </details>
+
       </div>
 
       <div class="faq-note">
@@ -151,5 +171,5 @@ export async function render() {
         διαχείρισης στο <strong>alumni1976@gmail.com</strong>.
       </div>
     </section>
-  `;
+  `);
 }

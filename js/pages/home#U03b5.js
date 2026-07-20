@@ -1,7 +1,37 @@
 import { getText } from "../services/textService.js";
 export async function render() {
-  return getText("home.renderHtml", `
+  return getText("home_alt.renderHtml", `
     <main class="page home-page">
+
+      <section class="hero chronicle-hero">
+        <div class="hero-grid-overlay"></div>
+        <div class="hero-year-bg">1976</div>
+
+        <div class="hero-content">
+          <div class="hero-eyebrow">Πενήντα χρόνια κοινής πορείας</div>
+
+          <h1 class="hero-title">
+            Η <em>Ιστορία</em> μας
+          </h1>
+
+          <p class="hero-desc">
+            Ψηφιακός τόπος μνήμης και επικοινωνίας για τους αποφοίτους
+            της Σχολής Ηλεκτρολόγων Μηχανικών του Πανεπιστημίου Πατρών,
+            τάξη του 1976.
+          </p>
+
+          <div class="hero-wisdom">
+            <p>⚡ Η θεωρία δείχνει τον δρόμο. Η πράξη τον επιβεβαιώνει.</p>
+            <p>🎓 Η γνώση αποκτά αξία όταν μοιράζεται.</p>
+            <p>🤝 Η κοινή διαδρομή γίνεται κοινή μνήμη.</p>
+          </div>
+
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="javascript:void(0)" onclick="document.getElementById('event').scrollIntoView({behavior:'smooth'})">Το Reunion των 50 Ετών</a>
+            <a class="btn btn-outline" href="#/community">Κατάλογος Μελών</a>
+          </div>
+        </div>
+      </section>
 
       <section id="event" class="section recap-section">
         <div class="section-header">
@@ -88,47 +118,15 @@ export async function render() {
             τότε που πρωτοπεράσαμε τις πύλες του Πανεπιστημίου.
           </p>
 
-           <p hidden>
-             Σύντομα θα αναρτηθεί πλούσιο φωτογραφικό υλικό από τη χθεσινή
-             μας συνάντηση στο Gallery της ιστοσελίδας μας.
-           </p>
+          <p>
+            Σύντομα θα αναρτηθεί πλούσιο φωτογραφικό υλικό από τη χθεσινή
+            μας συνάντηση στο Gallery της ιστοσελίδας μας.
+          </p>
 
           <p class="recap-thanks">
             Σας ευχαριστούμε όλους από καρδιάς για τη μοναδική σας παρουσία.
             Εις το επανιδείν!
           </p>
-        </div>
-      </section>
-
-      <div class="ornament-divider"><span>✦</span></div>
-
-      <section class="hero chronicle-hero">
-        <div class="hero-grid-overlay"></div>
-        <div class="hero-year-bg">1976</div>
-
-        <div class="hero-content">
-          <div class="hero-eyebrow">Πενήντα χρόνια κοινής πορείας</div>
-
-          <h1 class="hero-title">
-            Η <em>Ιστορία</em> μας
-          </h1>
-
-          <p class="hero-desc">
-            Ψηφιακός τόπος μνήμης και επικοινωνίας για τους αποφοίτους
-            της Σχολής Ηλεκτρολόγων Μηχανικών του Πανεπιστημίου Πατρών,
-            τάξη του 1976.
-          </p>
-
-          <div class="hero-wisdom">
-            <p>⚡ Η θεωρία δείχνει τον δρόμο. Η πράξη τον επιβεβαιώνει.</p>
-            <p>🎓 Η γνώση αποκτά αξία όταν μοιράζεται.</p>
-            <p>🤝 Η κοινή διαδρομή γίνεται κοινή μνήμη.</p>
-          </div>
-
-          <div class="hero-actions">
-            <a class="btn btn-primary" href="#/community">Κατάλογος Μελών</a>
-            <a class="btn btn-outline" href="#/thinktank">Δεξαμενή Σκέψεων</a>
-          </div>
         </div>
       </section>
 
@@ -245,7 +243,7 @@ export async function render() {
           </p>
 
           <div class="person">Δημήτρης Κολέτσος</div>
-          <div class="dates">1953 – 2025</div>
+          <div class="dates">1954 – 2025</div>
           <span class="rip">✦ Αιωνία του η μνήμη</span>
         </div>
       </section>

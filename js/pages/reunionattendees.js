@@ -1,19 +1,34 @@
-const DATA_URL = './assets/data/attendees.json';
+import { getReunionData } from "../api/reunionApi.js";
+
+import { getText, formatText } from "../services/textService.js";
 
 function escHtml(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
+
 function initials(first, last) {
-  return [(first||'')[0],(last||'')[0]].filter(Boolean).map(c=>c.toUpperCase()).join('');
+  return [(first || "")[0], (last || "")[0]]
+    .filter(Boolean)
+    .map(c => c.toUpperCase())
+    .join("");
+}
+
+function isAttended(value) {
+  return value === true || value === 1 || value === "1" || value === "true";
 }
 
 export async function render() {
-  return `
+  return getText("reunionattendees.renderHtml", `
     <div class="profs-header photos-header">
       <div class="profs-eyebrow">REUNION 2026</div>
       <h1>Συμμετέχοντες <em>Reunion</em></h1>
       <p>Οι συνάδελφοι που τίμησαν με την παρουσία τους τη συνάντηση της 20ης Ιουνίου 2026.</p>
     </div>
+
     <main class="photos-main">
       <section class="photos-section">
 
@@ -37,58 +52,76 @@ export async function render() {
 
       </section>
     </main>
-  `;
+  `);
 }
 
 export async function afterRender() {
-  const message    = document.getElementById('raMessage');
-  const countEl    = document.getElementById('raCount');
-  const grid       = document.getElementById('raGrid');
-  const absentSec  = document.getElementById('raAbsent');
-  const absentList = document.getElementById('raAbsentList');
+  const message = document.getElementById("raMessage");
+  const countEl = document.getElementById("raCount");
+  const grid = document.getElementById("raGrid");
+  const absentSec = document.getElementById("raAbsent");
+  const absentList = document.getElementById("raAbsentList");
+
+  if (!message || !grid) return;
 
   try {
-    const res  = await fetch(DATA_URL);
-    const all  = await res.json();
+    const all = await getReunionData();
 
-    const attended = all.filter(g => g.attended === true);
-    const absent   = all.filter(g => g.attended !== true && (g.first_name || g.last_name));
+    console.log("Reunion data sample:", all[0]);
+
+    const validMembers = all.filter(x =>
+      (x.firstName || x.lastName)
+    );
+
+    const attended = validMembers.filter(x =>
+      isAttended(x.attended)
+    );
+
+    const absent = validMembers.filter(x =>
+      !isAttended(x.attended)
+    );
 
     if (!attended.length) {
-      message.textContent = 'Δεν υπάρχουν ακόμη καταχωρήσεις.';
+      message.textContent = getText("reunionattendees.noEntries", "Δεν υπάρχουν ακόμη καταχωρήσεις.");
+      if (countEl) countEl.textContent = formatText("reunionattendees.count", { attended: 0, total: validMembers.length }, `0 παρόντες από ${validMembers.length} μέλη`);
       return;
     }
 
-    message.textContent = '';
-    grid.classList.remove('hidden');
-    if (countEl) countEl.textContent = `${attended.length} παρόντες από ${all.length} μέλη`;
+    message.textContent = "";
+    grid.classList.remove("hidden");
 
-    // Attendees grid with photo or initials
-    grid.innerHTML = attended.map((a, i) => {
-      const name  = `${a.first_name||''} ${a.last_name||''}`.trim();
-      const photo = a.photo_link_cloud || '';
-      const avatarHtml = photo
-        ? `<img src="${escHtml(photo)}" alt="${escHtml(name)}" class="ra-avatar-img" loading="lazy">`
-        : `<div class="ra-avatar-placeholder">${initials(a.first_name, a.last_name)}</div>`;
-
-      return `
-        <article class="ra-card" style="animation-delay:${i*0.04}s">
-          <div class="ra-avatar">${avatarHtml}</div>
-          <div class="ra-name">${escHtml(name)}</div>
-        </article>`;
-    }).join('');
-
-    // Absent members — compact list
-    if (absent.length) {
-      absentSec.classList.remove('hidden');
-      absentList.innerHTML = absent.map(a => {
-        const name = `${a.first_name||''} ${a.last_name||''}`.trim();
-        return `<span class="ra-absent-name">${escHtml(name)}</span>`;
-      }).join('');
+    if (countEl) {
+      countEl.textContent = formatText("reunionattendees.count", { attended: attended.length, total: validMembers.length }, `${attended.length} παρόντες από ${validMembers.length} μέλη`);
     }
 
-  } catch(err) {
-    console.error(err);
-    message.textContent = 'Αποτυχία φόρτωσης λίστας.';
+    grid.innerHTML = attended.map((a, i) => {
+      const name = `${a.firstName || ""} ${a.lastName || ""}`.trim();
+      //const photo = a.photoLinkCloud || "";
+	  const photo = a.photoLink || "";
+
+      const avatarHtml = photo
+        ? `<img src="${escHtml(photo)}" alt="${escHtml(name)}" class="ra-avatar-img" loading="lazy">`
+        : `<div class="ra-avatar-placeholder">${escHtml(initials(a.firstName, a.lastName))}</div>`;
+
+      return `
+        <article class="ra-card" style="animation-delay:${i * 0.04}s">
+          <div class="ra-avatar">${avatarHtml}</div>
+          <div class="ra-name">${escHtml(name)}</div>
+        </article>
+      `;
+    }).join("");
+
+    if (absent.length && absentSec && absentList) {
+      absentSec.classList.remove("hidden");
+
+      absentList.innerHTML = absent.map(a => {
+        const name = `${a.firstName || ""} ${a.lastName || ""}`.trim();
+        return `<span class="ra-absent-name">${escHtml(name)}</span>`;
+      }).join("");
+    }
+
+  } catch (err) {
+    console.error("Error loading reunion attendees:", err);
+    message.textContent = getText("reunionattendees.loadError", "Αποτυχία φόρτωσης λίστας.");
   }
 }

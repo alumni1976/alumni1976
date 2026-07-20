@@ -1,10 +1,8 @@
-const SUPABASE_URL = "https://hpnrlshfxxcyujrxegka.supabase.co";
+import { getMembers } from "../api/membersApi.js";
+import { getAlumniEvents } from "../api/eventsApi.js";
+import { createEventForm } from "../api/eventFormsApi.js";
 
-const SUPABASE_KEY =
-  document.getElementById("supabase-db")?.dataset?.apikey;
-
-const SEND_MAIL_FUNCTION_URL =
-  "https://hpnrlshfxxcyujrxegka.supabase.co/functions/v1/send-event-confirmation";
+import { getText } from "../services/textService.js";
 
 let selectedMember = null;
 let currentEvent = null;
@@ -22,15 +20,20 @@ function getEventId() {
   const hash = location.hash || "";
   const query = hash.includes("?") ? hash.split("?")[1] : "";
   const params = new URLSearchParams(query);
+
   return params.get("id") || "1";
 }
 
 function fullName(member) {
-  return `${member.last_name || ""} ${member.first_name || ""}`.trim();
+  return `${member.lastName || ""} ${member.firstName || ""}`.trim();
 }
 
 function displayName(member) {
-  return `${member.first_name || ""} ${member.last_name || ""}`.trim();
+  return `${member.firstName || ""} ${member.lastName || ""}`.trim();
+}
+
+function isDeceased(member) {
+  return String(member.status || "active").trim().toLowerCase() === "deceased";
 }
 
 function formatGreekDate(dateValue) {
@@ -67,28 +70,21 @@ function formatGreekDate(dateValue) {
   return value;
 }
 
-function googleDriveImage(url, size = "w160") {
-  if (!url) return "";
+function formatGreekTime(timeValue) {
+  if (!timeValue) return "-";
 
-  const value = String(url).trim();
+  const text = String(timeValue).trim();
+  const match = text.match(/^(\d{1,2}):(\d{2})/);
 
-  if (!value) return "";
-
-  if (value.includes("drive.google.com")) {
-    const match =
-      value.match(/\/d\/([^/]+)/) ||
-      value.match(/[?&]id=([^&]+)/);
-
-    if (match && match[1]) {
-      return `https://drive.google.com/thumbnail?id=${encodeURIComponent(match[1])}&sz=${size}`;
-    }
+  if (!match) {
+    return text;
   }
 
-  return value;
+  return `${match[1].padStart(2, "0")}:${match[2]}`;
 }
 
-function memberPhotoMarkup(member, size = "w160", className = "") {
-  const photo = googleDriveImage(member.photo_link, size);
+function memberPhotoMarkup(member, className = "") {
+  const photo = String(member.photoLink || "").trim();
   const name = displayName(member) || fullName(member);
 
   if (photo) {
@@ -97,6 +93,7 @@ function memberPhotoMarkup(member, size = "w160", className = "") {
         class="${escapeHtml(className)}"
         src="${escapeHtml(photo)}"
         alt="${escapeHtml(name)}"
+        loading="lazy"
       >
     `;
   }
@@ -104,164 +101,12 @@ function memberPhotoMarkup(member, size = "w160", className = "") {
   return `<div class="${escapeHtml(className)} event-member-avatar">👤</div>`;
 }
 
-/*
-  REST calls to Supabase database.
-
-  Kept in the same style as ThinkTank:
-  - apikey
-  - Authorization
-  - Content-Type
-
-  Do not use this function for Edge Function email sending.
-*/
-async function supabaseFetch(path, options = {}) {
-  if (!SUPABASE_KEY) {
-    throw new Error("Δεν βρέθηκε Supabase API key.");
-  }
-
-  const response = await fetch(`${SUPABASE_URL}${path}`, {
-    ...options,
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      "Content-Type": "application/json",
-      ...(options.headers || {})
-    }
-  });
-
-  if (options.headers?.Prefer === "return=minimal") {
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw error;
-    }
-
-    return null;
-  }
-
-  const data = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw data || new Error(`Σφάλμα API: ${response.status}`);
-  }
-
-  return data;
-}
-
-function buildConfirmationEmail({ member, event, registration }) {
-  const memberName = displayName(member);
-
-  const guestsCount = Number(registration.guests_count || 0);
-
-  const guestsText =
-    guestsCount === 1
-      ? "1 συνοδός"
-      : `${guestsCount} συνοδοί`;
-
-  const mealText = registration.meal_participation ? "Ναι" : "Όχι";
-
-  const title = `Επιβεβαίωση δήλωσης συμμετοχής - ${event.title}`;
-
-  const message = `Αγαπητέ/ή ${memberName},
-
-Η δήλωση συμμετοχής σας καταχωρήθηκε με επιτυχία.
-
-Εκδήλωση: ${event.title}
-Ημερομηνία: ${formatGreekDate(event.event_date)}
-Ώρα: ${event.event_time || "-"}
-Τοποθεσία: ${event.location || "-"}
-Αριθμός συνοδών: ${guestsText}
-Συμμετοχή στο γεύμα: ${mealText}
-
-Σας ευχαριστούμε.
-Alumni 1976`;
-
-  return { title, message };
-}
-
-/*
-  Event email confirmation.
-
-  IMPORTANT:
-  send-event-confirmation must have Verify JWT OFF in Supabase.
-
-  Do NOT send:
-  Authorization: Bearer SUPABASE_KEY
-
-  because SUPABASE_KEY is sb_publishable_..., not a JWT.
-*/
-async function sendEventConfirmationEmail({ member, event, registration }) {
-  if (!member?.email) {
-    return { ok: false, reason: "missing_member_email" };
-  }
-
-  const email = buildConfirmationEmail({
-    member,
-    event,
-    registration
-  });
-
-  try {
-    const response = await fetch(SEND_MAIL_FUNCTION_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        name: displayName(member),
-        email: member.email,
-        title: email.title,
-        message: email.message
-      })
-    });
-
-    const result = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      console.warn("Event confirmation email returned error:", {
-        status: response.status,
-        result
-      });
-
-      return {
-        ok: false,
-        reason: "function_error",
-        status: response.status,
-        error: result
-      };
-    }
-
-    return { ok: true, result };
-
-  } catch (err) {
-    console.error("Event confirmation email failed:", err);
-
-    return {
-      ok: false,
-      reason: "network_or_function_error",
-      error: err
-    };
-  }
-}
-
-async function markConfirmationSent(registrationId) {
-  if (!registrationId) return;
-
-  await supabaseFetch(
-    `/rest/v1/eventforms?id=eq.${encodeURIComponent(registrationId)}`,
-    {
-      method: "PATCH",
-      headers: {
-        Prefer: "return=minimal"
-      },
-      body: JSON.stringify({
-        confirmation_sent: true
-      })
-    }
-  );
+function findEventById(events, eventId) {
+  return events.find(event => String(event.id) === String(eventId)) || null;
 }
 
 export async function render() {
-  return `
+  return getText("eventregistration.renderHtml", `
     <section class="event-registration-page">
       <p class="section-tag">Δήλωση Συμμετοχής</p>
       <h2>Δήλωση Συμμετοχής</h2>
@@ -320,7 +165,7 @@ export async function render() {
         <p id="registrationMessage" class="registration-message"></p>
       </form>
     </section>
-  `;
+  `);
 }
 
 export async function afterRender() {
@@ -333,40 +178,61 @@ export async function afterRender() {
   const selectedMemberBox = document.getElementById("selectedMemberBox");
   const registrationMessage = document.getElementById("registrationMessage");
   const submitButton = document.getElementById("submitEventRegistration");
+  const guestsCountInput = document.getElementById("guestsCount");
+  const mealParticipationInput = document.getElementById("mealParticipation");
+  const commentsInput = document.getElementById("eventComments");
+
+  if (
+    !eventSummary ||
+    !form ||
+    !memberSearch ||
+    !memberOptions ||
+    !selectedMemberBox ||
+    !registrationMessage ||
+    !submitButton ||
+    !guestsCountInput ||
+    !mealParticipationInput ||
+    !commentsInput
+  ) {
+    return;
+  }
+
+  selectedMember = null;
+  currentEvent = null;
 
   let members = [];
 
   try {
-    const events = await supabaseFetch(
-      `/rest/v1/alumnievents?select=id,title,event_date,event_time,location,description&id=eq.${encodeURIComponent(eventId)}&limit=1`
-    );
+    const [events, allMembers] = await Promise.all([
+      getAlumniEvents(),
+      getMembers()
+    ]);
 
-    if (!events || !events.length) {
-      eventSummary.innerHTML = `<p>Η εκδήλωση δεν βρέθηκε.</p>`;
+    currentEvent = findEventById(events, eventId);
+
+    if (!currentEvent) {
+      eventSummary.innerHTML = `<p>${getText("eventregistration.eventNotFound", "Η εκδήλωση δεν βρέθηκε.")}</p>`;
       form.classList.add("hidden");
       return;
     }
 
-    currentEvent = events[0];
-
     eventSummary.innerHTML = `
       <article class="registration-summary-card">
         <h3>${escapeHtml(currentEvent.title)}</h3>
-        <p><strong>Ημερομηνία:</strong> ${escapeHtml(formatGreekDate(currentEvent.event_date))}</p>
-        <p><strong>Ώρα:</strong> ${escapeHtml(currentEvent.event_time || "-")}</p>
-        <p><strong>Τοποθεσία:</strong> ${escapeHtml(currentEvent.location || "-")}</p>
+        <p><strong>${getText("eventregistration.dateLabel", "Ημερομηνία:")}</strong> ${escapeHtml(formatGreekDate(currentEvent.eventDate))}</p>
+        <p><strong>${getText("eventregistration.timeLabel", "Ώρα:")}</strong> ${escapeHtml(formatGreekTime(currentEvent.eventTime))}</p>
+        <p><strong>${getText("eventregistration.locationLabel", "Τοποθεσία:")}</strong> ${escapeHtml(currentEvent.location || "-")}</p>
       </article>
     `;
 
-    const dataset = await supabaseFetch(
-      "/rest/v1/members?select=id,first_name,last_name,email,photo_link,status&order=last_name.asc"
-    );
-
-    members = (dataset || []).filter(member => String(member.status || "active").toLowerCase() !== "deceased");
+    members = allMembers
+      .filter(member => !isDeceased(member))
+      .sort((a, b) => fullName(a).localeCompare(fullName(b), "el"));
 
   } catch (err) {
-    console.error(err);
-    eventSummary.innerHTML = `<p>Αποτυχία φόρτωσης στοιχείων.</p>`;
+    console.error("Error loading event registration data:", err);
+
+    eventSummary.innerHTML = `<p>${getText("eventregistration.loadError", "Αποτυχία φόρτωσης στοιχείων.")}</p>`;
     form.classList.add("hidden");
     return;
   }
@@ -385,7 +251,7 @@ export async function afterRender() {
 
     if (!filtered.length) {
       memberOptions.innerHTML =
-        `<div class="event-member-option muted">Δεν βρέθηκε μέλος.</div>`;
+        `<div class="event-member-option muted">${getText("eventregistration.memberNotFound", "Δεν βρέθηκε μέλος.")}</div>`;
       return;
     }
 
@@ -396,8 +262,9 @@ export async function afterRender() {
         data-id="${escapeHtml(member.id)}"
       >
         <span class="event-member-option-thumb">
-          ${memberPhotoMarkup(member, "w120", "event-member-thumb-img")}
+          ${memberPhotoMarkup(member, "event-member-thumb-img")}
         </span>
+
         <span class="event-member-option-name">
           ${escapeHtml(fullName(member))}
         </span>
@@ -427,16 +294,21 @@ export async function afterRender() {
     memberOptions.innerHTML = "";
 
     selectedMemberBox.classList.remove("hidden");
+
     selectedMemberBox.innerHTML = `
       <div class="selected-member-card">
         <div class="selected-member-photo-wrap">
-          ${memberPhotoMarkup(selectedMember, "w420", "selected-member-photo")}
+          ${memberPhotoMarkup(selectedMember, "selected-member-photo")}
         </div>
 
         <div class="selected-member-info">
-          <strong>Επιλεγμένος απόφοιτος</strong>
+          <strong>${getText("eventregistration.selectedMember", "Επιλεγμένος απόφοιτος")}</strong>
           <h3>${escapeHtml(displayName(selectedMember))}</h3>
-          ${selectedMember.email ? `<span>${escapeHtml(selectedMember.email)}</span>` : ""}
+          ${
+            selectedMember.email
+              ? `<span>${escapeHtml(String(selectedMember.email).trim())}</span>`
+              : ""
+          }
         </div>
       </div>
     `;
@@ -447,69 +319,44 @@ export async function afterRender() {
 
     if (!selectedMember) {
       registrationMessage.textContent =
-        "Παρακαλώ επιλέξτε απόφοιτο από τη λίστα.";
+        getText("eventregistration.memberRequired", "Παρακαλώ επιλέξτε απόφοιτο από τη λίστα.");
       return;
     }
 
-    if (!selectedMember.email) {
+    if (!currentEvent) {
       registrationMessage.textContent =
-        "Ο επιλεγμένος απόφοιτος δεν έχει email στο αρχείο μελών.";
+        getText("eventregistration.invalidEvent", "Δεν έχει επιλεγεί έγκυρη εκδήλωση.");
       return;
     }
 
     submitButton.disabled = true;
-    registrationMessage.textContent = "Αποθήκευση δήλωσης...";
+    registrationMessage.textContent = getText("eventregistration.saving", "Αποθήκευση δήλωσης...");
 
     const payload = {
-      event_id: Number(currentEvent.id),
-      member_id: Number(selectedMember.id),
-      guests_count: Number(document.getElementById("guestsCount").value || 0),
-      meal_participation:
-        document.getElementById("mealParticipation").value === "true",
-      comments: document.getElementById("eventComments").value.trim(),
-      attendance_status: "registered",
-      confirmation_sent: false
+      eventId: Number(currentEvent.id),
+      memberId: Number(selectedMember.id),
+      guestsCount: Number(guestsCountInput.value || 0),
+      mealParticipation: mealParticipationInput.value === "true",
+      comments: commentsInput.value.trim(),
+      attendanceStatus: "registered",
+      confirmationSent: false
     };
 
     try {
-      const inserted = await supabaseFetch("/rest/v1/eventforms", {
-        method: "POST",
-        headers: {
-          Prefer: "return=representation"
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const registrationId = inserted?.[0]?.id;
-
-      registrationMessage.textContent =
-        "Η δήλωση καταχωρήθηκε. Αποστολή email επιβεβαίωσης...";
-
-      const emailResult = await sendEventConfirmationEmail({
-        member: selectedMember,
-        event: currentEvent,
-        registration: payload
-      });
-
-      if (emailResult.ok) {
-        await markConfirmationSent(registrationId);
-      }
+      await createEventForm(payload);
 
       form.reset();
+
       selectedMember = null;
       selectedMemberBox.classList.add("hidden");
       selectedMemberBox.innerHTML = "";
+      memberOptions.innerHTML = "";
 
-      if (emailResult.ok) {
-        registrationMessage.innerHTML =
-          "✓ Η δήλωση συμμετοχής σας καταχωρήθηκε με επιτυχία.<br>Έχει σταλεί email επιβεβαίωσης στη διεύθυνση που έχετε δηλώσει.<br>Σας ευχαριστούμε.";
-      } else {
-        registrationMessage.innerHTML =
-          "✓ Η δήλωση συμμετοχής σας καταχωρήθηκε με επιτυχία.<br>Δεν στάλθηκε email επιβεβαίωσης. Θα γίνει έλεγχος από τον διαχειριστή.<br>Σας ευχαριστούμε.";
-      }
+      registrationMessage.innerHTML =
+        getText("eventregistration.successHtml", "✓ Η δήλωση συμμετοχής σας καταχωρήθηκε με επιτυχία.<br>Σας ευχαριστούμε.");
 
     } catch (err) {
-      console.error(err);
+      console.error("Error saving event registration:", err);
 
       const errorText = String(
         err?.message ||
@@ -521,13 +368,12 @@ export async function afterRender() {
 
       if (errorText.includes("duplicate")) {
         registrationMessage.textContent =
-          "Υπάρχει ήδη δήλωση συμμετοχής για τον συγκεκριμένο απόφοιτο.";
-        submitButton.disabled = false;
+          getText("eventregistration.duplicate", "Υπάρχει ήδη δήλωση συμμετοχής για τον συγκεκριμένο απόφοιτο.");
         return;
       }
 
       registrationMessage.textContent =
-        "Αποτυχία αποθήκευσης δήλωσης.";
+        getText("eventregistration.saveError", "Αποτυχία αποθήκευσης δήλωσης.");
 
     } finally {
       submitButton.disabled = false;

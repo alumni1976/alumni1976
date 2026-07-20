@@ -1,144 +1,181 @@
-function escapeHtml(text = '') {
+import { getMembers } from "../api/membersApi.js";
+
+import { getText } from "../services/textService.js";
+
+function escapeHtml(text = "") {
   return String(text)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
-function googleDriveImage(url, size = 'w160') {
-  if (!url) return '';
+function cleanText(value) {
+  const text = String(value || "").trim();
+  return text === "" ? "-" : text;
+}
 
-  const cleanUrl = String(url).trim();
+function fullName(member) {
+  return `${member.lastName || ""} ${member.firstName || ""}`.trim();
+}
 
-  const patterns = [
-    /\/file\/d\/([^/]+)/,
-    /\/d\/([^/]+)/,
-    /[?&]id=([^&]+)/,
-    /thumbnail\?id=([^&]+)/,
-    /uc\?id=([^&]+)/
-  ];
+function displayName(member) {
+  return `${member.firstName || ""} ${member.lastName || ""}`.trim();
+}
 
-  for (const pattern of patterns) {
-    const match = cleanUrl.match(pattern);
-    if (match && match[1]) {
-      return `https://drive.google.com/thumbnail?id=${match[1]}&sz=${size}`;
-    }
-  }
+function initials(member) {
+  return [
+    (member.firstName || "")[0],
+    (member.lastName || "")[0]
+  ]
+    .filter(Boolean)
+    .map(c => c.toUpperCase())
+    .join("");
+}
 
-  return cleanUrl;
+function isDeceased(member) {
+  return String(member.status || "").toLowerCase() === "deceased";
+}
+
+function memorialLabel(member) {
+  return isDeceased(member) ? getText("directory.memorial", "✝ Στη μνήμη") : "";
 }
 
 export async function render() {
-  return `
+  return getText("directory.renderHtml", `
     <section class="directory-page">
       <p class="section-tag">Ευρετήριο</p>
       <h2>Ευρετήριο Αποφοίτων</h2>
 
       <p>Επιλέξτε απόφοιτο από τη λίστα.</p>
 
-      <div class="member-search-box">
-        <input id="memberSearch" type="text" placeholder="Αναζήτηση με επώνυμο..." autocomplete="off">
-        <div id="memberOptions" class="member-options"></div>
-      </div>
+      <div class="directory-layout">
+        <div class="directory-list-column">
+          <div class="member-search-box">
+            <input id="memberSearch" type="text" placeholder="Αναζήτηση με επώνυμο..." autocomplete="off">
+            <div id="memberOptions" class="member-options"></div>
+          </div>
+        </div>
 
-      <div id="memberDetails" class="member-details"></div>
+        <div class="directory-details-column">
+          <div id="memberDetails" class="member-details">
+            <div class="member-details-placeholder">
+              Επιλέξτε ένα μέλος από τη λίστα για να εμφανιστούν τα στοιχεία του.
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
-  `;
+  `);
 }
 
 export async function afterRender() {
-  const repo = window.menuRepository;
+  const searchInput = document.getElementById("memberSearch");
+  const optionsBox = document.getElementById("memberOptions");
+  const detailsBox = document.getElementById("memberDetails");
 
-  if (!repo) {
-    console.error('menuRepository not found');
+  if (!searchInput || !optionsBox || !detailsBox) return;
+
+  let members = [];
+
+  try {
+    members = await getMembers();
+  } catch (err) {
+    console.error("Error loading members:", err);
+    optionsBox.innerHTML = `
+      <div class="photos-message">
+        ${getText("directory.loadError", "Αποτυχία φόρτωσης μελών.")}
+      </div>
+    `;
     return;
   }
 
-  const dataset = await repo.fetchMembers();
-  const members = dataset.items || [];
-
-  const searchInput = document.getElementById('memberSearch');
-  const optionsBox = document.getElementById('memberOptions');
-  const detailsBox = document.getElementById('memberDetails');
-
-  function fullName(member) {
-    return `${member.last_name || ''} ${member.first_name || ''}`.trim();
-  }
-
-  function displayName(member) {
-    return `${member.first_name || ''} ${member.last_name || ''}`.trim();
-  }
-
-  function isDeceased(member) {
-    return String(member.status || '').toLowerCase() === 'deceased';
-  }
-
-  function memorialLabel(member) {
-    return isDeceased(member) ? '✝ Στη μνήμη' : '';
-  }
-
-  function renderOptions(filter = '') {
-    const q = filter.toLowerCase();
+  function renderOptions(filter = "") {
+    const q = filter.toLowerCase().trim();
 
     const filtered = members
       .filter(m => fullName(m).toLowerCase().includes(q))
-      .sort((a, b) => fullName(a).localeCompare(fullName(b), 'el'));
+      .sort((a, b) => fullName(a).localeCompare(fullName(b), "el"));
+
+    if (!filtered.length) {
+      optionsBox.innerHTML = `
+        <div class="photos-message">
+          ${getText("directory.memberNotFound", "Δεν βρέθηκε μέλος.")}
+        </div>
+      `;
+      return;
+    }
 
     optionsBox.innerHTML = filtered.map(m => {
       const deceased = isDeceased(m);
-	  console.log(m.photo_link_clord)
-     // const thumb = googleDriveImage(m.photo_link, 'w120');
-const thumb = String(m.photo_link_clord || '').trim();
-console.log('thumb:', JSON.stringify(thumb), 'truthy:', !!thumb);     
-	 const name = fullName(m);
-      const optionClass = deceased ? 'member-option member-option-deceased' : 'member-option';
-      const disabledAttr = deceased ? ' aria-disabled="true" title="Στη μνήμη"' : '';
+      const thumb = String(m.photoLinkClord || "").trim();
+      const name = fullName(m);
+      const optionClass = deceased
+        ? "member-option member-option-deceased"
+        : "member-option";
+
+      const disabledAttr = deceased
+        ? ' aria-disabled="true" title="${getText("directory.memorialTitle", "Στη μνήμη")}"'
+        : "";
 
       return `
         <div class="${optionClass}" data-id="${escapeHtml(m.id)}"${disabledAttr}>
           <div class="member-option-thumb">
             ${
               thumb
-                ? `<img src="${escapeHtml(thumb)}" alt="${escapeHtml(name)}">`
-                : `<span class="member-option-icon">${deceased ? '✝' : '👤'}</span>`
+                ? `<img src="${escapeHtml(thumb)}" alt="${escapeHtml(name)}" loading="lazy">`
+                : `<span class="member-option-icon">${deceased ? "✝" : "👤"}</span>`
             }
           </div>
 
           <div class="member-option-text">
             <span>${escapeHtml(name)}</span>
-            ${deceased ? `<small>${escapeHtml(memorialLabel(m))}</small>` : ''}
+            ${deceased ? `<small>${escapeHtml(memorialLabel(m))}</small>` : ""}
           </div>
         </div>
       `;
-    }).join('');
+    }).join("");
   }
 
   function renderDetails(member) {
-    //const photo = googleDriveImage(member.photo_link, 'w700');
-	const photo = String(member.photo_link_clord || '').trim();
-console.log('details photo:', JSON.stringify(photo), 'truthy:', !!photo);
-    const avatar = `<div class="member-photo avatar-gold">👤</div>`;
+    const photo = String(member.photoLinkClord || "").trim();
+    const cvUrl = String(member.cvLinkClord || "").trim();
+    const mediaUrl = String(member.mediaLinkClord || "").trim();
+
+    const avatar = `
+      <div class="member-photo avatar-gold">
+        ${escapeHtml(initials(member) || "👤")}
+      </div>
+    `;
 
     detailsBox.innerHTML = `
       <div class="member-card">
         ${
           photo
-            ? `<img class="member-photo" src="${escapeHtml(photo)}" alt="${escapeHtml(displayName(member))}">`
+            ? `<img class="member-photo" src="${escapeHtml(photo)}" alt="${escapeHtml(displayName(member))}" loading="lazy">`
             : avatar
         }
 
         <div>
           <h3>${escapeHtml(displayName(member))}</h3>
 
-          <p><strong>Email:</strong> ${escapeHtml(member.email || '-')}</p>
-          <p><strong>Τηλέφωνο:</strong> ${escapeHtml(member.phone || '-')}</p>
-          <p><strong>Διεύθυνση:</strong> ${escapeHtml(member.address || '-')}</p>
+          <p><strong>Email:</strong> ${escapeHtml(cleanText(member.email))}</p>
+          <p><strong>${getText("directory.phoneLabel", "Τηλέφωνο:")}</strong> ${escapeHtml(cleanText(member.phone))}</p>
+          <p><strong>${getText("directory.addressLabel", "Διεύθυνση:")}</strong> ${escapeHtml(cleanText(member.address))}</p>
 
           <div class="member-actions">
-            ${member.cv_link ? `<a class="btn-primary" href="${escapeHtml(member.cv_link)}" target="_blank" rel="noopener">CV</a>` : ''}
-            ${member.media_link ? `<a class="btn-primary" href="${escapeHtml(member.media_link)}" target="_blank" rel="noopener">Media</a>` : ''}
+            ${
+              cvUrl
+                ? `<a class="btn-primary" href="${escapeHtml(cvUrl)}" target="_blank" rel="noopener">${getText("directory.cvButton", "CV")}</a>`
+                : ""
+            }
+
+            ${
+              mediaUrl
+                ? `<a class="btn-primary" href="${escapeHtml(mediaUrl)}" target="_blank" rel="noopener">${getText("directory.mediaButton", "Media")}</a>`
+                : ""
+            }
           </div>
         </div>
       </div>
@@ -147,12 +184,12 @@ console.log('details photo:', JSON.stringify(photo), 'truthy:', !!photo);
     searchInput.value = fullName(member);
   }
 
-  searchInput.addEventListener('input', () => {
+  searchInput.addEventListener("input", () => {
     renderOptions(searchInput.value);
   });
 
-  optionsBox.addEventListener('click', e => {
-    const option = e.target.closest('.member-option');
+  optionsBox.addEventListener("click", e => {
+    const option = e.target.closest(".member-option");
     if (!option) return;
 
     const member = members.find(m => String(m.id) === option.dataset.id);

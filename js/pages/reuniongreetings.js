@@ -1,33 +1,35 @@
-const DATA_URL = './assets/data/greetings.json';
+import { getReunionData } from "../api/reunionApi.js";
+
+import { getText, formatText } from "../services/textService.js";
 
 function escHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function initials(first, last) {
-  return [(first || '')[0], (last || '')[0]]
+  return [(first || "")[0], (last || "")[0]]
     .filter(Boolean)
     .map(c => c.toUpperCase())
-    .join('');
+    .join("");
 }
 
 function renderCard(g, i) {
-  const name = `${g.first_name || ''} ${g.last_name || ''}`.trim();
-  const photo = g.photo_link_cloud || '';
-  const text = (g.greeting || '').trim();
+  const name = `${g.firstName || ""} ${g.lastName || ""}`.trim();
+  const photo = g.photoLink || "";
+  const text = (g.greeting || "").trim();
 
   const avatarHtml = photo
-    ? `<img src="${escHtml(photo)}" alt="${escHtml(name)}" class="rg-avatar-img">`
-    : `<div class="rg-avatar-placeholder">${initials(g.first_name, g.last_name)}</div>`;
+    ? `<img src="${escHtml(photo)}" alt="${escHtml(name)}" class="rg-avatar-img" loading="lazy">`
+    : `<div class="rg-avatar-placeholder">${escHtml(initials(g.firstName, g.lastName))}</div>`;
 
   const bodyHtml = text
     .split(/\n\n+/)
-    .map(p => `<p>${escHtml(p.trim()).replace(/\n/g,'<br>')}</p>`)
-    .join('');
+    .map(p => `<p>${escHtml(p.trim()).replace(/\n/g, "<br>")}</p>`)
+    .join("");
 
   return `
     <article class="rg-card" style="animation-delay:${i * 0.06}s">
@@ -38,7 +40,7 @@ function renderCard(g, i) {
 
         <div class="rg-card-meta">
           <strong class="rg-name">${escHtml(name)}</strong>
-          <span class="rg-role">Απόφοιτος Ηλεκτρολόγων Μηχανικών 1976</span>
+          <span class="rg-role">${getText("reuniongreetings.role", "Απόφοιτος Ηλεκτρολόγων Μηχανικών 1976")}</span>
         </div>
       </div>
 
@@ -50,7 +52,7 @@ function renderCard(g, i) {
 }
 
 export async function render() {
-  return `
+  return getText("reuniongreetings.renderHtml", `
     <div class="profs-header photos-header">
       <div class="profs-eyebrow">REUNION 2026</div>
 
@@ -80,39 +82,41 @@ export async function render() {
         <div id="rgWall" class="rg-wall"></div>
       </section>
     </main>
-  `;
+  `);
 }
 
 export async function afterRender() {
-  const wall = document.getElementById('rgWall');
-  const message = document.getElementById('rgMessage');
-  const countEl = document.getElementById('rgCount');
+  const wall = document.getElementById("rgWall");
+  const message = document.getElementById("rgMessage");
+  const countEl = document.getElementById("rgCount");
+
+  if (!wall || !message) return;
 
   try {
-    const res = await fetch(DATA_URL);
-    const data = await res.json();
+    const data = await getReunionData();
 
     const greetings = data.filter(g =>
-      (g.greeting || '').trim() !== ''
+      (g.greeting || "").trim() !== ""
     );
 
     if (!greetings.length) {
-      message.textContent = 'Δεν υπάρχουν ακόμη μηνύματα.';
+      message.textContent = getText("reuniongreetings.noMessages", "Δεν υπάρχουν ακόμη μηνύματα.");
+      if (countEl) countEl.textContent = "";
       return;
     }
 
-    message.textContent = '';
+    message.textContent = "";
 
     if (countEl) {
-      countEl.textContent = `${greetings.length} μηνύματα`;
+      countEl.textContent = formatText("reuniongreetings.count", { count: greetings.length }, `${greetings.length} μηνύματα`);
     }
 
     wall.innerHTML = greetings
       .map((g, i) => renderCard(g, i))
-      .join('');
+      .join("");
 
   } catch (err) {
-    console.error(err);
-    message.textContent = 'Αποτυχία φόρτωσης μηνυμάτων.';
+    console.error("Error loading reunion greetings:", err);
+    message.textContent = getText("reuniongreetings.loadError", "Αποτυχία φόρτωσης μηνυμάτων.");
   }
 }

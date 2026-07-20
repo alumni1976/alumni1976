@@ -1,10 +1,7 @@
-const SUPABASE_URL = "https://hpnrlshfxxcyujrxegka.supabase.co";
+import { getMembers } from "../api/membersApi.js";
+import { createContactForm } from "../api/contactApi.js";
 
-const SUPABASE_KEY =
-  document.getElementById("supabase-db")?.dataset?.apikey;
-
-const SEND_CONTACT_FUNCTION_URL =
-  "https://hpnrlshfxxcyujrxegka.supabase.co/functions/v1/send-contact-notification";
+import { getText } from "../services/textService.js";
 
 let selectedMember = null;
 
@@ -18,15 +15,19 @@ function escapeHtml(text = "") {
 }
 
 function fullName(member) {
-  return `${member.last_name || ""} ${member.first_name || ""}`.trim();
+  return `${member.lastName || ""} ${member.firstName || ""}`.trim();
 }
 
 function displayName(member) {
-  return `${member.first_name || ""} ${member.last_name || ""}`.trim();
+  return `${member.firstName || ""} ${member.lastName || ""}`.trim();
+}
+
+function isDeceased(member) {
+  return String(member.status || "").toLowerCase() === "deceased";
 }
 
 function memberPhotoMarkup(member, className = "") {
-  const photo = String(member.photo_link_clord || "").trim();
+  const photo = String(member.photoLink || "").trim();
   const name = displayName(member) || fullName(member);
 
   if (photo) {
@@ -35,6 +36,7 @@ function memberPhotoMarkup(member, className = "") {
         class="${escapeHtml(className)}"
         src="${escapeHtml(photo)}"
         alt="${escapeHtml(name)}"
+        loading="lazy"
       >
     `;
   }
@@ -42,106 +44,8 @@ function memberPhotoMarkup(member, className = "") {
   return `<div class="${escapeHtml(className)} event-member-avatar">👤</div>`;
 }
 
-async function supabaseFetch(path, options = {}) {
-  if (!SUPABASE_KEY) {
-    throw new Error("Δεν βρέθηκε Supabase API key.");
-  }
-
-  const response = await fetch(`${SUPABASE_URL}${path}`, {
-    ...options,
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      "Content-Type": "application/json",
-      ...(options.headers || {})
-    }
-  });
-
-  if (options.headers?.Prefer === "return=minimal") {
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw error;
-    }
-
-    return null;
-  }
-
-  const data = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw data || new Error(`Σφάλμα API: ${response.status}`);
-  }
-
-  return data;
-}
-
-async function sendContactNotification({ member, subject, message }) {
-  if (!member?.email) {
-    return { ok: false, reason: "missing_member_email" };
-  }
-
-  try {
-    const response = await fetch(SEND_CONTACT_FUNCTION_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        name: displayName(member),
-        email: member.email,
-        subject,
-        message
-      })
-    });
-
-    const result = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      console.warn("Contact notification returned error:", {
-        status: response.status,
-        result
-      });
-
-      return {
-        ok: false,
-        reason: "function_error",
-        status: response.status,
-        error: result
-      };
-    }
-
-    return { ok: true, result };
-
-  } catch (err) {
-    console.error("Contact notification failed:", err);
-
-    return {
-      ok: false,
-      reason: "network_or_function_error",
-      error: err
-    };
-  }
-}
-
-async function markEmailSent(contactId) {
-  if (!contactId) return;
-
-  await supabaseFetch(
-    `/rest/v1/contactforms?id=eq.${encodeURIComponent(contactId)}`,
-    {
-      method: "PATCH",
-      headers: {
-        Prefer: "return=minimal"
-      },
-      body: JSON.stringify({
-        email_sent: true
-      })
-    }
-  );
-}
-
 export async function render() {
-  return `
+  return getText("contact.renderHtml", `
     <section class="contact-page">
       <p class="section-tag">Επικοινωνία</p>
       <h2>Επικοινωνία</h2>
@@ -197,7 +101,7 @@ export async function render() {
         <p id="contactStatusMessage" class="registration-message"></p>
       </form>
     </section>
-  `;
+  `);
 }
 
 export async function afterRender() {
@@ -210,19 +114,36 @@ export async function afterRender() {
   const statusMessage = document.getElementById("contactStatusMessage");
   const submitButton = document.getElementById("submitContactBtn");
 
+  if (
+    !form ||
+    !memberSearch ||
+    !memberOptions ||
+    !selectedMemberBox ||
+    !subjectInput ||
+    !messageInput ||
+    !statusMessage ||
+    !submitButton
+  ) {
+    return;
+  }
+
+  selectedMember = null;
+
   let members = [];
 
   try {
-    const dataset = await supabaseFetch(
-      "/rest/v1/members?select=id,first_name,last_name,email,photo_link_clord,status&order=last_name.asc"
-    );
+    const allMembers = await getMembers();
 
-    members = (dataset || []).filter(member => member.status !== "deceased");
+    members = allMembers
+      .filter(member => !isDeceased(member))
+      .sort((a, b) => fullName(a).localeCompare(fullName(b), "el"));
 
   } catch (err) {
-    console.error(err);
+    console.error("Error loading contact members:", err);
+
     statusMessage.textContent =
-      "Αποτυχία φόρτωσης στοιχείων μελών.";
+      getText("contact.membersLoadError", "Αποτυχία φόρτωσης στοιχείων μελών.");
+
     form.classList.add("hidden");
     return;
   }
@@ -241,7 +162,7 @@ export async function afterRender() {
 
     if (!filtered.length) {
       memberOptions.innerHTML =
-        `<div class="event-member-option muted">Δεν βρέθηκε μέλος.</div>`;
+        `<div class="event-member-option muted">${getText("contact.memberNotFound", "Δεν βρέθηκε μέλος.")}</div>`;
       return;
     }
 
@@ -254,6 +175,7 @@ export async function afterRender() {
         <span class="event-member-option-thumb">
           ${memberPhotoMarkup(member, "event-member-thumb-img")}
         </span>
+
         <span class="event-member-option-name">
           ${escapeHtml(fullName(member))}
         </span>
@@ -283,6 +205,7 @@ export async function afterRender() {
     memberOptions.innerHTML = "";
 
     selectedMemberBox.classList.remove("hidden");
+
     selectedMemberBox.innerHTML = `
       <div class="selected-member-card">
         <div class="selected-member-photo-wrap">
@@ -290,9 +213,13 @@ export async function afterRender() {
         </div>
 
         <div class="selected-member-info">
-          <strong>Επιλεγμένος απόφοιτος</strong>
+          <strong>${getText("contact.selectedMember", "Επιλεγμένος απόφοιτος")}</strong>
           <h3>${escapeHtml(displayName(selectedMember))}</h3>
-          ${selectedMember.email ? `<span>${escapeHtml(selectedMember.email)}</span>` : ""}
+          ${
+            selectedMember.email
+              ? `<span>${escapeHtml(String(selectedMember.email).trim())}</span>`
+              : ""
+          }
         </div>
       </div>
     `;
@@ -303,13 +230,7 @@ export async function afterRender() {
 
     if (!selectedMember) {
       statusMessage.textContent =
-        "Παρακαλώ επιλέξτε απόφοιτο από τη λίστα.";
-      return;
-    }
-
-    if (!selectedMember.email) {
-      statusMessage.textContent =
-        "Ο επιλεγμένος απόφοιτος δεν έχει email στο αρχείο μελών.";
+        getText("contact.memberRequired", "Παρακαλώ επιλέξτε απόφοιτο από τη λίστα.");
       return;
     }
 
@@ -317,65 +238,42 @@ export async function afterRender() {
     const message = messageInput.value.trim();
 
     if (!subject) {
-      statusMessage.textContent = "Παρακαλώ επιλέξτε θέμα.";
+      statusMessage.textContent = getText("contact.subjectRequired", "Παρακαλώ επιλέξτε θέμα.");
       return;
     }
 
     if (!message) {
-      statusMessage.textContent = "Παρακαλώ γράψτε μήνυμα.";
+      statusMessage.textContent = getText("contact.messageRequired", "Παρακαλώ γράψτε μήνυμα.");
       return;
     }
 
     submitButton.disabled = true;
-    statusMessage.textContent = "Αποθήκευση μηνύματος...";
+    statusMessage.textContent = getText("contact.saving", "Αποθήκευση μηνύματος...");
 
     try {
-      const inserted = await supabaseFetch("/rest/v1/contactforms", {
-        method: "POST",
-        headers: {
-          Prefer: "return=representation"
-        },
-        body: JSON.stringify({
-          member_id: Number(selectedMember.id),
-          subject,
-          message,
-          status: "new",
-          email_sent: false
-        })
-      });
-
-      const contactId = inserted?.[0]?.id;
-
-      statusMessage.textContent =
-        "Το μήνυμα καταχωρήθηκε. Αποστολή ειδοποίησης...";
-
-      const emailResult = await sendContactNotification({
-        member: selectedMember,
+      await createContactForm({
+        memberId: Number(selectedMember.id),
         subject,
-        message
+        message,
+        status: "new",
+        emailSent: false
       });
-
-      if (emailResult.ok) {
-        await markEmailSent(contactId);
-      }
 
       form.reset();
+
       selectedMember = null;
       selectedMemberBox.classList.add("hidden");
       selectedMemberBox.innerHTML = "";
+      memberOptions.innerHTML = "";
 
-      if (emailResult.ok) {
-        statusMessage.innerHTML =
-          "✓ Το μήνυμά σας καταχωρήθηκε με επιτυχία.<br>Ο διαχειριστής έχει ενημερωθεί.<br>Σας ευχαριστούμε.";
-      } else {
-        statusMessage.innerHTML =
-          "✓ Το μήνυμά σας καταχωρήθηκε με επιτυχία.<br>Δεν στάλθηκε email ειδοποίησης. Θα γίνει έλεγχος από τον διαχειριστή.<br>Σας ευχαριστούμε.";
-      }
+      statusMessage.innerHTML =
+        getText("contact.successHtml", "✓ Το μήνυμά σας καταχωρήθηκε με επιτυχία.<br>Σας ευχαριστούμε.");
 
     } catch (err) {
-      console.error(err);
+      console.error("Error saving contact form:", err);
+
       statusMessage.textContent =
-        err?.message || "Αποτυχία αποθήκευσης μηνύματος.";
+        err?.message || getText("contact.saveError", "Αποτυχία αποθήκευσης μηνύματος.");
 
     } finally {
       submitButton.disabled = false;
